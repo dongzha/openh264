@@ -696,8 +696,18 @@ int32_t ParseSliceHeaderSyntaxs (PWelsDecoderContext pCtx, PBitStringAux pBs, co
   }
 
   if (pPps->bEntropyCodingModeFlag) {
+#ifdef CABAC_ENABLED
+      if(pSliceHead->eSliceType != I_SLICE && pSliceHead->eSliceType != SI_SLICE ) {
+          WELS_READ_VERIFY (BsGetUe(pBs,&uiCode));
+          pSliceHead->iCabacInitIdc = uiCode;
+      }
+      else
+          pSliceHead->iCabacInitIdc = 0;
+      pCtx->model_num = pSliceHead->iCabacInitIdc;
+#else
     WelsLog (pLogCtx, WELS_LOG_WARNING, "ParseSliceHeaderSyntaxs(): CABAC in Enhancement layer not supported.");
     return GENERATE_ERROR_NO (ERR_LEVEL_SLICE_HEADER, ERR_INFO_UNSUPPORTED_CABAC_EL);
+#endif
   }
 
   WELS_READ_VERIFY (BsGetSe (pBs, &iCode)); //slice_qp_delta
@@ -1010,6 +1020,10 @@ int32_t InitialDqLayersContext (PWelsDecoderContext pCtx, const int32_t kiMaxWid
                            "pCtx->sMb.pLumaQp[]");
     pCtx->sMb.pChromaQp[i] = (int8_t*)WelsMalloc (pCtx->sMb.iMbWidth * pCtx->sMb.iMbHeight * sizeof (int8_t),
                              "pCtx->sMb.pChromaQp[]");
+#ifdef CABAC_ENABLED
+    pCtx->sMb.pMvd[i][0] = (int16_t (*)[16][2])WelsMalloc( pCtx->sMb.iMbWidth * pCtx->sMb.iMbHeight * sizeof(int16_t) * MV_A * MB_BLOCK4x4_NUM, "pCtx->sMb.pMvd[][]");
+    pCtx->sMb.pCbfDc[i] = (uint8_t *)WelsMalloc( pCtx->sMb.iMbWidth * pCtx->sMb.iMbHeight * sizeof(uint8_t), "pCtx->sMb.pCbfDc[]");
+#endif
     pCtx->sMb.pNzc[i] = (int8_t (*)[24])WelsMalloc (pCtx->sMb.iMbWidth * pCtx->sMb.iMbHeight * sizeof (int8_t) * 24,
                         "pCtx->sMb.pNzc[]");
     pCtx->sMb.pNzcRs[i] = (int8_t (*)[24])WelsMalloc (pCtx->sMb.iMbWidth * pCtx->sMb.iMbHeight * sizeof (int8_t) * 24,
@@ -1046,6 +1060,10 @@ int32_t InitialDqLayersContext (PWelsDecoderContext pCtx, const int32_t kiMaxWid
                             (NULL == pCtx->sMb.pRefIndex[i][0]) ||
                             (NULL == pCtx->sMb.pLumaQp[i]) ||
                             (NULL == pCtx->sMb.pChromaQp[i]) ||
+#ifdef CABAC_ENABLED
+                            (NULL == pCtx->sMb.pMvd[i][0]) ||
+                            (NULL == pCtx->sMb.pCbfDc[i]) ||
+#endif
                             (NULL == pCtx->sMb.pNzc[i]) ||
                             (NULL == pCtx->sMb.pNzcRs[i]) ||
                             (NULL == pCtx->sMb.pScaledTCoeff[i]) ||
@@ -1112,6 +1130,22 @@ void UninitialDqLayersContext (PWelsDecoderContext pCtx) {
 
       pCtx->sMb.pChromaQp[i] = NULL;
     }
+
+#ifdef CABAC_ENABLED
+    if (pCtx->sMb.pMvd[i][0])
+    {
+      WelsFree( pCtx->sMb.pMvd[i][0], "pCtx->sMb.pMvd[][]" );
+      
+      pCtx->sMb.pMvd[i][0] = NULL;
+    }
+
+    if (pCtx->sMb.pCbfDc[i])
+    {
+      WelsFree(pCtx->sMb.pCbfDc[i], "pCtx->sMb.pCbfDc[]");
+      
+      pCtx->sMb.pCbfDc[i] = NULL;
+    }
+#endif
 
     if (pCtx->sMb.pNzc[i]) {
       WelsFree (pCtx->sMb.pNzc[i], "pCtx->sMb.pNzc[]");
