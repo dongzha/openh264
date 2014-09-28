@@ -44,6 +44,14 @@ int32_t WelsActualDecodeMbCavlcPSlice (PWelsDecoderContext pCtx);
 int32_t WelsDecodeMbCavlcPSlice (PWelsDecoderContext pCtx, PNalUnit pNalCur);
 typedef int32_t (*PWelsDecMbCavlcFunc) (PWelsDecoderContext pCtx, PNalUnit pNalCur);
 
+#ifdef CABAC_ENABLED
+typedef int32_t ( *PWelsDecMbCabacFunc )  (PWelsDecoderContext pCtx, PNalUnit pNalCur, uint32_t& uiEosFlag);
+int32_t WelsDecodeMbCabacISlice(PWelsDecoderContext pCtx, PNalUnit pNalCur, uint32_t& uiEosFlag);
+int32_t WelsDecodeMbCabacPSlice(PWelsDecoderContext pCtx, PNalUnit pNalCur, uint32_t& uiEosFlag);
+int32_t WelsDecodeMbCabacISliceBaseMode0(PWelsDecoderContext pCtx, uint32_t& uiEosFlag);
+int32_t WelsDecodeMbCabacPSliceBaseMode0(PWelsDecoderContext pCtx, PWelsNeighAvail pNeighAvail, uint32_t& uiEosFlag);
+#endif
+
 int32_t WelsTargetSliceConstruction (PWelsDecoderContext pCtx); //construction based on slice
 
 int32_t WelsDecodeSlice (PWelsDecoderContext pCtx, bool bFirstSliceInLayer, PNalUnit pNalCur);
@@ -77,6 +85,10 @@ void SetNonZeroCount_AArch64_neon (int8_t* pNonZeroCount);
 void SetNonZeroCount_c (int8_t* pNonZeroCount);
 
 void WelsBlockFuncInit (SBlockFunc* pFunc,  int32_t iCpu);
+#ifdef CABAC_ENABLED
+void WelsBlockZero16x16_c(int16_t * block, int32_t stride);
+void WelsBlockZero8x8_c(int16_t * block, int32_t stride);
+#endif
 
 } // namespace WelsDec
 
