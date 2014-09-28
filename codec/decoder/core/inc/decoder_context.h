@@ -57,6 +57,67 @@
 
 namespace WelsDec {
 
+    
+#define MAX_PRED_MODE_ID_I16x16  3
+#define MAX_PRED_MODE_ID_CHROMA  3
+#define MAX_PRED_MODE_ID_I4x4    8
+  
+    
+#ifdef CABAC_ENABLED
+    typedef struct
+    {
+#ifdef READ32BIT
+        uint64_t uiRange;
+        uint64_t uiOffset;
+#else
+        uint32_t uiRange;
+        uint32_t uiOffset;
+#endif
+        int32_t iBitsLeft;
+        uint8_t *pBuffStart;
+        uint8_t *pBuffCurr;
+        uint8_t *pBuffEnd;
+    } SWelsCabacDecEngine, *PWelsCabacDecEngine;
+    
+typedef struct SWels_Cabac_Element {
+  uint16_t uiState;
+  uint8_t uiMPS;
+  uint8_t uiUnused;
+}SWelsCabacCtx, *PWelsCabacCtx;
+    
+#define CTX_NUM_MB_TYPE 11
+#define CTX_NUM_SUBMB_TYPE 9
+#define CTX_NUM_MVD 7
+#define CTX_NUM_REF_NO 6
+#define CTX_NUM_DELTA_QP 4
+#define CTX_NUM_TRANS_SIZE 3
+#define CTX_NUM_IPR 2
+#define CTX_NUM_CIPR 4
+#define CTX_NUM_CBP 4
+#define CTX_NUM_CBF 4
+#define CTX_NUM_MAP 15
+#define CTX_NUM_LAST 15
+#define CTX_NUM_ONE 5
+#define CTX_NUM_ABS 5
+#define BLOCK_TYPE_NUM 5
+
+#define CTX_OFFSET_MB_TYPE  (0)
+#define CTX_OFFSET_SUBMB_TYPE  (CTX_OFFSET_MB_TYPE + CTX_NUM_MB_TYPE)
+#define CTX_OFFSET_MVD   (CTX_OFFSET_SUBMB_TYPE + CTX_NUM_SUBMB_TYPE)
+#define CTX_OFFSET_REF_NO (CTX_OFFSET_MVD +  2 * CTX_NUM_MVD)
+#define CTX_OFFSET_DELTA_QP (CTX_OFFSET_REF_NO + CTX_NUM_REF_NO)
+#define CTX_OFFSET_TRANS_SIZE   (CTX_OFFSET_DELTA_QP + CTX_NUM_DELTA_QP)
+#define CTX_OFFSET_IPR   (CTX_OFFSET_TRANS_SIZE + CTX_NUM_TRANS_SIZE)
+#define CTX_OFFSET_CIPR   (CTX_OFFSET_IPR + CTX_NUM_IPR)
+#define CTX_OFFSET_CBP   (CTX_OFFSET_CIPR + CTX_NUM_CIPR)
+#define CTX_OFFSET_CBF   (CTX_OFFSET_CBP + 3 * CTX_NUM_CBP)
+#define CTX_OFFSET_MAP   (CTX_OFFSET_CBF + BLOCK_TYPE_NUM * CTX_NUM_CBF)
+#define CTX_OFFSET_LAST  (CTX_OFFSET_MAP + 2 * BLOCK_TYPE_NUM * CTX_NUM_MAP)
+#define CTX_OFFSET_ONE   (CTX_OFFSET_LAST + 2* BLOCK_TYPE_NUM * CTX_NUM_LAST)
+#define CTX_OFFSET_ABS   (CTX_OFFSET_ONE + BLOCK_TYPE_NUM * CTX_NUM_ONE)
+#define CTX_NUM_TOTAL   (CTX_OFFSET_ABS + BLOCK_TYPE_NUM * CTX_NUM_ABS)
+#endif
+    
 typedef struct TagDataBuffer {
 uint8_t* pHead;
 uint8_t* pEnd;
@@ -141,16 +202,26 @@ PChromaDeblockingEQ4Func  pfChromaDeblockingEQ4Hor;
 } SDeblockingFunc, *PDeblockingFunc;
 
 typedef void (*PWelsNonZeroCountFunc) (int8_t* pNonZeroCount);
-
+#ifdef CABAC_ENABLED
+typedef void (*PWelsBlockZeroFunc) (int16_t* block,int32_t stride);
+#endif
 typedef  struct  TagBlockFunc {
 PWelsNonZeroCountFunc		pWelsSetNonZeroCountFunc;
+#ifdef CABAC_ENABLED
+PWelsBlockZeroFunc			pWelsBlockZero16x16Func;
+PWelsBlockZeroFunc			pWelsBlockZero8x8Func;
+#endif
 } SBlockFunc;
 
-typedef void (*PWelsFillNeighborMbInfoIntra4x4Func) (PNeighAvail pNeighAvail, uint8_t* pNonZeroCount,
+typedef void (*PWelsFillNeighborMbInfoIntra4x4Func) (PWelsNeighAvail pNeighAvail, uint8_t* pNonZeroCount,
     int8_t* pIntraPredMode, PDqLayer pCurLayer);
-typedef int32_t (*PWelsParseIntra4x4ModeFunc) (PNeighAvail pNeighAvail, int8_t* pIntraPredMode, PBitStringAux pBs,
+#ifdef CABAC_ENABLED
+typedef void (*PWelsMapNeighToSample) (PWelsNeighAvail pNeighAvail, int32_t* pSampleAvail);
+typedef void (*PWelsMap16NeighToSample) (PWelsNeighAvail pNeighAvail, uint8_t* pSampleAvail);
+#endif
+typedef int32_t (*PWelsParseIntra4x4ModeFunc) (PWelsNeighAvail pNeighAvail, int8_t* pIntraPredMode, PBitStringAux pBs,
     PDqLayer pCurDqLayer);
-typedef int32_t (*PWelsParseIntra16x16ModeFunc) (PNeighAvail pNeighAvail, PBitStringAux pBs, PDqLayer pCurDqLayer);
+typedef int32_t (*PWelsParseIntra16x16ModeFunc) (PWelsNeighAvail pNeighAvail, PBitStringAux pBs, PDqLayer pCurDqLayer);
 
 enum {
 OVERWRITE_NONE = 0,
@@ -202,6 +273,8 @@ struct {
   int8_t	(*pRefIndex[LAYER_NUM_EXCHANGEABLE][LIST_A])[MB_BLOCK4x4_NUM];
   int8_t*	pLumaQp[LAYER_NUM_EXCHANGEABLE];	/*mb luma_qp*/
   int8_t*	pChromaQp[LAYER_NUM_EXCHANGEABLE];					/*mb chroma_qp*/
+  int16_t	(*pMvd[LAYER_NUM_EXCHANGEABLE][LIST_A])[MB_BLOCK4x4_NUM][MV_A]; //[LAYER_NUM_EXCHANGEABLE   MB_BLOCK4x4_NUM*]
+  uint8_t *pCbfDc[LAYER_NUM_EXCHANGEABLE];
   int8_t	(*pNzc[LAYER_NUM_EXCHANGEABLE])[24];
   int8_t	(*pNzcRs[LAYER_NUM_EXCHANGEABLE])[24];
   int16_t (*pScaledTCoeff[LAYER_NUM_EXCHANGEABLE])[MB_COEFF_LIST_SIZE]; /*need be aligned*/
@@ -308,9 +381,13 @@ int32_t iCurSeqIntervalMaxPicWidth;
 int32_t iCurSeqIntervalMaxPicHeight;
 
 PWelsFillNeighborMbInfoIntra4x4Func  pFillInfoCacheIntra4x4Func;
+#ifdef CABAC_ENABLED
+PWelsMapNeighToSample pMap4x4NeighToSampleFunc;
+PWelsMap16NeighToSample pMap16x16NeighToSampleFunc;
+#else
 PWelsParseIntra4x4ModeFunc           pParseIntra4x4ModeFunc;
 PWelsParseIntra16x16ModeFunc         pParseIntra16x16ModeFunc;
-
+#endif
 //feedback whether or not have VCL in current AU, and the temporal ID
 int32_t iFeedbackVclNalInAu;
 int32_t iFeedbackTidInAu;
@@ -326,6 +403,11 @@ void*      pTraceHandle;
 //Save the last nal header info
 SNalUnitHeaderExt sLastNalHdrExt;
 SSliceHeader      sLastSliceHeader;
+#ifdef CABAC_ENABLED
+PWelsCabacCtx   pCabacCtx;
+PWelsCabacDecEngine   pCabacDecEngine;
+int32_t               model_num;
+#endif
 
 } SWelsDecoderContext, *PWelsDecoderContext;
 
@@ -337,6 +419,7 @@ for (int i = 0; i < MAX_LAYER_NUM; i++) {
 //#ifdef __cplusplus
 //}
 //#endif//__cplusplus
+
 
 } // namespace WelsDec
 

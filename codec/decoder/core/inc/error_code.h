@@ -181,6 +181,10 @@ ERR_INFO_INVALID_MMCO_SHOART2LONG,
 ERR_INFO_INVALID_MMCO_REF_NUM_OVERFLOW,
 ERR_INFO_INVALID_MMCO_REF_NUM_NOT_ENOUGH,
 ERR_INFO_INVALID_MMCO_LONG_TERM_IDX_EXCEED_MAX,
+#ifdef CABAC_ENABLED
+//for CABAC
+ERR_CABAC_NO_BS_TO_READ,
+#endif
 };
 //-----------------------------------------------------------------------------------------------------------
 
