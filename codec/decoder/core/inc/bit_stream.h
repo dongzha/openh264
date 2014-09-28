@@ -35,7 +35,8 @@
 #define WELS_BIT_STREAM_H__
 
 #include "typedefs.h"
-
+#define CABAC_ENABLED
+#define READ32BIT
 namespace WelsDec {
 
 /*
