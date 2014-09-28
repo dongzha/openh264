@@ -57,6 +57,53 @@
 
 namespace WelsDec {
 
+    
+#define MAX_PRED_MODE_ID_I16x16  3
+#define MAX_PRED_MODE_ID_CHROMA  3
+#define MAX_PRED_MODE_ID_I4x4    8
+#define  WELS_QP_MAX    51
+#define  WELS_CONTEXT_COUNT 460
+#define  CTX_NA 0
+    
+#ifdef CABAC_ENABLED
+  typedef struct SWels_Cabac_Element {
+    uint8_t uiState;
+    uint8_t uiMPS;
+  }SWelsCabacCtx, *PWelsCabacCtx;
+  
+    typedef struct
+    {
+#ifdef READ32BIT
+        uint64_t uiRange;
+        uint64_t uiOffset;
+#else
+        uint32_t uiRange;
+        uint32_t uiOffset;
+#endif
+        int32_t iBitsLeft;
+        uint8_t *pBuffStart;
+        uint8_t *pBuffCurr;
+        uint8_t *pBuffEnd;
+    } SWelsCabacDecEngine, *PWelsCabacDecEngine;
+    
+#define NEW_CTX_OFFSET_MB_TYPE_I 3
+#define NEW_CTX_OFFSET_SKIP 11
+#define NEW_CTX_OFFSET_SUBMB_TYPE 21
+#define NEW_CTX_OFFSET_MVD 40
+#define NEW_CTX_OFFSET_REF_NO 54
+#define NEW_CTX_OFFSET_DELTA_QP 60
+#define NEW_CTX_OFFSET_IPR 68
+#define NEW_CTX_OFFSET_CIPR 64
+#define NEW_CTX_OFFSET_CBP 73
+#define NEW_CTX_OFFSET_CBF 85
+#define NEW_CTX_OFFSET_MAP 105
+#define NEW_CTX_OFFSET_LAST 166
+#define NEW_CTX_OFFSET_ONE 227
+#define NEW_CTX_OFFSET_ABS 232
+#define CTX_NUM_MVD 7
+#define CTX_NUM_CBP 4
+#endif
+    
 typedef struct TagDataBuffer {
 uint8_t* pHead;
 uint8_t* pEnd;
@@ -141,16 +188,26 @@ PChromaDeblockingEQ4Func  pfChromaDeblockingEQ4Hor;
 } SDeblockingFunc, *PDeblockingFunc;
 
 typedef void (*PWelsNonZeroCountFunc) (int8_t* pNonZeroCount);
-
+#ifdef CABAC_ENABLED
+typedef void (*PWelsBlockZeroFunc) (int16_t* block,int32_t stride);
+#endif
 typedef  struct  TagBlockFunc {
 PWelsNonZeroCountFunc		pWelsSetNonZeroCountFunc;
+#ifdef CABAC_ENABLED
+PWelsBlockZeroFunc			pWelsBlockZero16x16Func;
+PWelsBlockZeroFunc			pWelsBlockZero8x8Func;
+#endif
 } SBlockFunc;
 
-typedef void (*PWelsFillNeighborMbInfoIntra4x4Func) (PNeighAvail pNeighAvail, uint8_t* pNonZeroCount,
+typedef void (*PWelsFillNeighborMbInfoIntra4x4Func) (PWelsNeighAvail pNeighAvail, uint8_t* pNonZeroCount,
     int8_t* pIntraPredMode, PDqLayer pCurLayer);
-typedef int32_t (*PWelsParseIntra4x4ModeFunc) (PNeighAvail pNeighAvail, int8_t* pIntraPredMode, PBitStringAux pBs,
+#ifdef CABAC_ENABLED
+typedef void (*PWelsMapNeighToSample) (PWelsNeighAvail pNeighAvail, int32_t* pSampleAvail);
+typedef void (*PWelsMap16NeighToSample) (PWelsNeighAvail pNeighAvail, uint8_t* pSampleAvail);
+#endif
+typedef int32_t (*PWelsParseIntra4x4ModeFunc) (PWelsNeighAvail pNeighAvail, int8_t* pIntraPredMode, PBitStringAux pBs,
     PDqLayer pCurDqLayer);
-typedef int32_t (*PWelsParseIntra16x16ModeFunc) (PNeighAvail pNeighAvail, PBitStringAux pBs, PDqLayer pCurDqLayer);
+typedef int32_t (*PWelsParseIntra16x16ModeFunc) (PWelsNeighAvail pNeighAvail, PBitStringAux pBs, PDqLayer pCurDqLayer);
 
 enum {
 OVERWRITE_NONE = 0,
@@ -202,6 +259,8 @@ struct {
   int8_t	(*pRefIndex[LAYER_NUM_EXCHANGEABLE][LIST_A])[MB_BLOCK4x4_NUM];
   int8_t*	pLumaQp[LAYER_NUM_EXCHANGEABLE];	/*mb luma_qp*/
   int8_t*	pChromaQp[LAYER_NUM_EXCHANGEABLE];					/*mb chroma_qp*/
+  int16_t	(*pMvd[LAYER_NUM_EXCHANGEABLE][LIST_A])[MB_BLOCK4x4_NUM][MV_A]; //[LAYER_NUM_EXCHANGEABLE   MB_BLOCK4x4_NUM*]
+  uint8_t *pCbfDc[LAYER_NUM_EXCHANGEABLE];
   int8_t	(*pNzc[LAYER_NUM_EXCHANGEABLE])[24];
   int8_t	(*pNzcRs[LAYER_NUM_EXCHANGEABLE])[24];
   int16_t (*pScaledTCoeff[LAYER_NUM_EXCHANGEABLE])[MB_COEFF_LIST_SIZE]; /*need be aligned*/
@@ -308,9 +367,14 @@ int32_t iCurSeqIntervalMaxPicWidth;
 int32_t iCurSeqIntervalMaxPicHeight;
 
 PWelsFillNeighborMbInfoIntra4x4Func  pFillInfoCacheIntra4x4Func;
+#ifdef CABAC_ENABLED
+PWelsMapNeighToSample pMap4x4NeighToSampleFunc;
+PWelsMap16NeighToSample pMap16x16NeighToSampleFunc;
+#endif
+#ifndef CABAC_ENABLED
 PWelsParseIntra4x4ModeFunc           pParseIntra4x4ModeFunc;
 PWelsParseIntra16x16ModeFunc         pParseIntra16x16ModeFunc;
-
+#endif
 //feedback whether or not have VCL in current AU, and the temporal ID
 int32_t iFeedbackVclNalInAu;
 int32_t iFeedbackTidInAu;
@@ -325,6 +389,14 @@ void*      pTraceHandle;
 //Save the last nal header info
 SNalUnitHeaderExt sLastNalHdrExt;
 SSliceHeader      sLastSliceHeader;
+#ifdef CABAC_ENABLED
+SWelsCabacCtx sWelsCabacContexts[4][WELS_QP_MAX + 1][WELS_CONTEXT_COUNT];
+bool bCabacInited;
+//PWelsCabacCtx   pCabacCtx;
+SWelsCabacCtx   pCabacCtx[WELS_CONTEXT_COUNT];
+PWelsCabacDecEngine   pCabacDecEngine;
+int32_t               model_num;
+#endif
 
 } SWelsDecoderContext, *PWelsDecoderContext;
 
@@ -336,6 +408,7 @@ for (int i = 0; i < MAX_LAYER_NUM; i++) {
 //#ifdef __cplusplus
 //}
 //#endif//__cplusplus
+
 
 } // namespace WelsDec
 

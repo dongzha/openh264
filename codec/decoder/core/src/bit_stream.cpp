@@ -72,7 +72,6 @@ int32_t InitBits (PBitStringAux pBitString, const uint8_t* kpBuf, const int32_t 
   pBitString->pStartBuf   = pTmp;				// buffer to start position
   pBitString->pEndBuf	    = pTmp + kiSizeBuf;	// buffer + length
   pBitString->iBits	    = kiSize;				// count bits of overall bitstreaming inputindex;
-
   pBitString->pCurBuf   = pBitString->pStartBuf;
   InitReadBits (pBitString);
 
