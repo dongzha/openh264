@@ -33,7 +33,7 @@
 #include "parse_mb_syn_cabac.h"
 #include "mv_pred.h"
 #include "error_code.h"
-#ifdef CABAC_ENABLED
+namespace WelsDec {
 #define IDX_UNUSED -1
 static const int16_t g_kMaxPos       [] = {IDX_UNUSED, 15, 14, 15, 3, 14, 3, 3, 14, 14};
 static const int16_t g_kMaxC2       [] = {IDX_UNUSED, 4, 4, 4, 3, 4, 3, 3, 4, 4};
@@ -166,7 +166,7 @@ void UpdateP8x16MvdCabac (SDqLayer* pCurDqLayer, int16_t pMvdCache[LIST_A][30][M
 
 int32_t ParseEndOfSliceCabac (PWelsDecoderContext pCtx, uint32_t& uiBinVal) {
   uiBinVal = 0;
-  DecodeTerminateCabac (pCtx->pCabacDecEngine, uiBinVal);
+  WELS_READ_VERIFY( DecodeTerminateCabac (pCtx->pCabacDecEngine, uiBinVal));
   return ERR_NONE;
 }
 
@@ -808,7 +808,7 @@ int32_t ParseSignificantCoeffCabac (int32_t* pSignificant, int32_t iResProperty,
 }
 
 int32_t ParseResidualBlockCabac (PWelsNeighAvail pNeighAvail, uint8_t* pNonZeroCountCache, SBitStringAux* pBsAux,
-                                 int32_t index, int32_t iMaxNumCoeff,
+                                 int32_t iIndex, int32_t iMaxNumCoeff,
                                  const uint8_t* pScanTable, int32_t iResProperty, short* sTCoeff, /*int mb_mode*/ uint8_t uiQp,
                                  PWelsDecoderContext pCtx) {
   int32_t iCurNzCacheIdx;
@@ -817,13 +817,17 @@ int32_t ParseResidualBlockCabac (PWelsNeighAvail pNeighAvail, uint8_t* pNonZeroC
   uint32_t uiCbpBit;
   int32_t pSignificantMap[16] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
-  WELS_READ_VERIFY (ParseCbfInfoCabac (pNeighAvail, pNonZeroCountCache, index, iResProperty, pCtx, uiCbpBit));
+  WELS_READ_VERIFY (ParseCbfInfoCabac (pNeighAvail, pNonZeroCountCache, iIndex, iResProperty, pCtx, uiCbpBit));
   if (uiCbpBit) { //has coeff
     WELS_READ_VERIFY (ParseSignificantMapCabac (pSignificantMap, iResProperty, pCtx, uiTotalCoeffNum));
     WELS_READ_VERIFY (ParseSignificantCoeffCabac (pSignificantMap, iResProperty, pCtx));
   }
 
-  iCurNzCacheIdx = g_kCacheNzcScanIdx[index];
+  iCurNzCacheIdx = g_kCacheNzcScanIdx[iIndex];
+  pNonZeroCountCache[iCurNzCacheIdx] = (uint8_t)uiTotalCoeffNum;
+  if( uiTotalCoeffNum==0 ) {
+    return ERR_NONE;
+  }
   int32_t j = 0;
   if (iResProperty == I16_LUMA_DC) {
     do {
@@ -832,16 +836,13 @@ int32_t ParseResidualBlockCabac (PWelsNeighAvail pNeighAvail, uint8_t* pNonZeroC
       ++j;
     } while (j < 16);
   } else if (iResProperty == CHROMA_DC_U) {
-    pNonZeroCountCache[iCurNzCacheIdx] = (uint8_t)uiTotalCoeffNum;
     do {
       if (pSignificantMap[j] != 0)
         sTCoeff[pScanTable[j]] = pSignificantMap[j] * pDeQuantMul[0];
       ++j;
     } while (j < 16);
   } else { //luma ac, chroma ac
-    pNonZeroCountCache[iCurNzCacheIdx] = (uint8_t)uiTotalCoeffNum;
     do {
-      //tCoeffLevel[j] = level[i];
       if (pSignificantMap[j] != 0)
         sTCoeff[pScanTable[j]] = pSignificantMap[j] * pDeQuantMul[pScanTable[j] & 0x07];
       ++j;
@@ -904,4 +905,4 @@ int32_t ParseIPCMInfoCabac (PWelsDecoderContext pCtx) {
   InitCabacDecEngineFromBS (pCabacDecEngine, pBsAux);
   return ERR_NONE;
 }
-#endif
+}

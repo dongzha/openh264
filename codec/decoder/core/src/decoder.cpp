@@ -139,9 +139,7 @@ void WelsDecoderDefaults (PWelsDecoderContext pCtx, SLogContext* pLogCtx) {
   pCtx->uiCpuFlag					= 0;
 
   pCtx->bAuReadyFlag				= 0; // au data is not ready
-#ifdef CABAC_ENABLED
   pCtx->bCabacInited = false;
-#endif
 
   pCtx->uiCpuFlag = WelsCPUFeatureDetect (&iCpuCores);
 
@@ -243,12 +241,10 @@ int32_t WelsRequestMem (PWelsDecoderContext pCtx, const int32_t kiMbWidth, const
 
   pCtx->bHaveGotMemory	= true;			// global memory for decoder context related is requested
   pCtx->pDec		        = NULL;			// need prefetch a new pic due to spatial size changed
-#ifdef CABAC_ENABLED
-  //if(pCtx->pCabacCtx == NULL)
-  //  pCtx->pCabacCtx = (SWelsCabacCtx*) WelsMalloc(sizeof(SWelsCabacCtx)*CTX_NUM_TOTAL, "pCtx->pCabacCtx");
+
   if(pCtx->pCabacDecEngine == NULL)
     pCtx->pCabacDecEngine = (SWelsCabacDecEngine*) WelsMalloc(sizeof(SWelsCabacDecEngine), "pCtx->pCabacDecEngine");
-#endif
+
   return ERR_NONE;
 }
 
@@ -275,11 +271,7 @@ void WelsFreeMem (PWelsDecoderContext pCtx) {
   pCtx->iImgWidthInPixel	= 0;
   pCtx->iImgHeightInPixel = 0;
   pCtx->bHaveGotMemory	= false;
-#ifdef CABAC_ENABLED
-  //WelsFree(pCtx->pCabacCtx, "pCtx->pCabacCtx");
   WelsFree(pCtx->pCabacDecEngine, "pCtx->cabac_engine");
-#endif
-
 }
 
 /*!
@@ -569,14 +561,7 @@ int32_t WelsDecodeBs (PWelsDecoderContext pCtx, const uint8_t* kpBsBuf, const in
       }
       return pCtx->iErrorCode;
     }
-    pDstNal += iDstIdx;
-#ifdef CABAC_ENABLED
-#ifdef READ32BIT
-    pDstNal += 4;
-#else
-    pDstNal += 2;   //for safety over-read two bytes value = 0x00
-#endif
-#endif
+    pDstNal += (iDstIdx + 4);
     pRawData->pCurPos = pDstNal; //init the pCurPos for next NAL(s) storage
   } else { /* no supplementary picture payload input, but stored a picture */
     PAccessUnit pCurAu	=

@@ -57,10 +57,8 @@ void WelsFillCacheConstrain0Intra4x4 (PWelsNeighAvail pNeighAvail, uint8_t* pNon
                                       PDqLayer pCurLayer);
 void WelsFillCacheConstrain1Intra4x4 (PWelsNeighAvail pNeighAvail, uint8_t* pNonZeroCount, int8_t* pIntraPredMode,
                                       PDqLayer pCurLayer);
-#ifdef CABAC_ENABLED
 void WelsFillCacheInterCabac (PWelsNeighAvail pNeighAvail, uint8_t* pNonZeroCount,
                          int16_t iMvArray[LIST_A][30][MV_A], int16_t iMvdCache[LIST_A][30][MV_A], int8_t iRefIdxArray[LIST_A][30], PDqLayer pCurLayer);
-#endif
 void WelsFillCacheInter (PWelsNeighAvail pNeighAvail, uint8_t* pNonZeroCount,
                          int16_t iMvArray[LIST_A][30][MV_A], int8_t iRefIdxArray[LIST_A][30], PDqLayer pCurLayer);
 
@@ -109,19 +107,6 @@ int32_t WelsResidualBlockCavlc (SVlcTable* pVlcTable,
                                 uint8_t uiQp,
                                 PWelsDecoderContext pCtx);
 
-/*!
- * \brief   parsing intra mode
- * \param 	input : current mb, bit-stream
- * \param 	output: 0 indicating decoding correctly; -1 means error
- */
-#ifndef CABAC_ENABLED
-int32_t ParseIntra4x4ModeConstrain0 (PWelsNeighAvail pNeighAvail, int8_t* pIntraPredMode, PBitStringAux pBs,
-                                     PDqLayer pCurDqLayer);
-int32_t ParseIntra4x4ModeConstrain1 (PWelsNeighAvail pNeighAvail, int8_t* pIntraPredMode, PBitStringAux pBs,
-                                     PDqLayer pCurDqLayer);
-int32_t ParseIntra16x16ModeConstrain0 (PWelsNeighAvail pNeighAvail, PBitStringAux pBs, PDqLayer pCurDqLayer);
-int32_t ParseIntra16x16ModeConstrain1 (PWelsNeighAvail pNeighAvail, PBitStringAux pBs, PDqLayer pCurDqLayer);
-#endif
 /*!
  * \brief   parsing inter info (including ref_index and pMvd)
  * \param 	input : decoding context, current mb, bit-stream

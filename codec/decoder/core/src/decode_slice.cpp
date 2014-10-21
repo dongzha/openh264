@@ -44,9 +44,7 @@
 #include "decode_slice.h"
 
 #include "parse_mb_syn_cavlc.h"
-#ifdef CABAC_ENABLED
 #include "parse_mb_syn_cabac.h"
-#endif
 #include "rec_mb.h"
 #include "mv_pred.h"
 
@@ -321,7 +319,6 @@ void WelsChromaDcIdct (int16_t* pBlock) {
   pBlk[iStride1] = (iE - iB) >> 1;
 }
 
-#ifdef CABAC_ENABLED
 void WelsMap4x4NeighToSampleNormal (PWelsNeighAvail pNeighAvail, int32_t* pSampleAvail) {
   if (pNeighAvail->iLeftAvail) {  //left
     pSampleAvail[ 6] =
@@ -837,7 +834,6 @@ int32_t WelsDecodeMbCabacPSliceBaseMode0 (PWelsDecoderContext pCtx, PWelsNeighAv
   return ERR_NONE;
 }
 
-
 int32_t WelsDecodeMbCabacPSlice (PWelsDecoderContext pCtx, PNalUnit pNalCur, uint32_t& uiEosFlag) {
   PDqLayer pCurLayer		 = pCtx->pCurDqLayer;
   PSlice pSlice			 = &pCurLayer->sLayerInfo.sSliceInLayer;
@@ -892,7 +888,6 @@ int32_t WelsDecodeMbCabacPSlice (PWelsDecoderContext pCtx, PNalUnit pNalCur, uin
   WELS_READ_VERIFY (WelsDecodeMbCabacPSliceBaseMode0 (pCtx, &uiNeighAvail, uiEosFlag));
   return ERR_NONE;
 }
-#endif
 
 int32_t WelsDecodeSlice (PWelsDecoderContext pCtx, bool bFirstSliceInLayer, PNalUnit pNalCur) {
   PDqLayer pCurLayer = pCtx->pCurDqLayer;
@@ -905,17 +900,11 @@ int32_t WelsDecodeSlice (PWelsDecoderContext pCtx, bool bFirstSliceInLayer, PNal
   PSliceHeader pSliceHeader = &pSliceHeaderExt->sSliceHeader;
   int32_t iMbX, iMbY;
   const int32_t kiCountNumMb = pSliceHeader->pSps->uiTotalMbCount; //need to be correct when fmo or multi slice
-  PBitStringAux pBs = pCurLayer->pBitStringAux;
-  intX_t iUsedBits  = 0;
-#ifdef CABAC_ENABLED
   uint32_t uiEosFlag = 0;
-  PWelsDecMbCabacFunc pDecMbCabacFunc;
-#endif
-  PWelsDecMbCavlcFunc pDecMbCavlcFunc;
+  PWelsDecMbFunc pDecMbFunc;
 
   pSlice->iTotalMbInCurSlice = 0; //initialize at the starting of slice decoding.
 
-#ifdef CABAC_ENABLED
   if (pCtx->pPps->bEntropyCodingModeFlag) {
     if (pSlice->sSliceHeaderExt.bAdaptiveMotionPredFlag ||
         pSlice->sSliceHeaderExt.bAdaptiveBaseModeFlag ||
@@ -926,53 +915,36 @@ int32_t WelsDecodeSlice (PWelsDecoderContext pCtx, bool bFirstSliceInLayer, PNal
       return dsBitstreamError;
     }
     if (P_SLICE == pSliceHeader->eSliceType)
-      pDecMbCabacFunc = WelsDecodeMbCabacPSlice;
+      pDecMbFunc = WelsDecodeMbCabacPSlice;
     else //I_SLICE. B_SLICE not supported now
-      pDecMbCabacFunc = WelsDecodeMbCabacISlice;
+      pDecMbFunc = WelsDecodeMbCabacISlice;
   } else {
-#endif
     if (P_SLICE == pSliceHeader->eSliceType) {
-      pDecMbCavlcFunc = WelsDecodeMbCavlcPSlice;
+      pDecMbFunc = WelsDecodeMbCavlcPSlice;
     } else { //I_SLICE
-      pDecMbCavlcFunc = WelsDecodeMbCavlcISlice;
+      pDecMbFunc = WelsDecodeMbCavlcISlice;
     }
-#ifdef CABAC_ENABLED
   }
-#endif
+
   if (pSliceHeader->pPps->bConstainedIntraPredFlag) {
     pCtx->pFillInfoCacheIntra4x4Func = WelsFillCacheConstrain1Intra4x4;
-#ifdef CABAC_ENABLED
     pCtx->pMap4x4NeighToSampleFunc    = WelsMap4x4NeighToSampleConstrain1;
     pCtx->pMap16x16NeighToSampleFunc  = WelsMap16x16NeighToSampleConstrain1;
-#else
-    pCtx->pParseIntra4x4ModeFunc      = ParseIntra4x4ModeConstrain1;
-    pCtx->pParseIntra16x16ModeFunc    = ParseIntra16x16ModeConstrain1;
-#endif
   } else {
     pCtx->pFillInfoCacheIntra4x4Func = WelsFillCacheConstrain0Intra4x4;
-#ifdef CABAC_ENABLED
     pCtx->pMap4x4NeighToSampleFunc    = WelsMap4x4NeighToSampleNormal;
     pCtx->pMap16x16NeighToSampleFunc  = WelsMap16x16NeighToSampleNormal;
-#else
-    pCtx->pParseIntra4x4ModeFunc      = ParseIntra4x4ModeConstrain0;
-    pCtx->pParseIntra16x16ModeFunc    = ParseIntra16x16ModeConstrain0;
-#endif
   }
 
   pCtx->eSliceType = pSliceHeader->eSliceType;
   
   if (pCurLayer->sLayerInfo.pPps->bEntropyCodingModeFlag == 1) {
-#ifdef CABAC_ENABLED
     int32_t iQp = WELS_MAX (0, pSlice->sSliceHeaderExt.sSliceHeader.iSliceQp);
     int32_t iCabacInitIdc = pSlice->sSliceHeaderExt.sSliceHeader.iCabacInitIdc;
     WelsCabacContextInit (pCtx, pSlice->eSliceType, iCabacInitIdc, iQp);
     //InitCabacCtx (pCtx->pCabacCtx, pSlice->eSliceType, iCabacInitIdc, iQp);
     pSlice->iLastDeltaQp = 0;
     InitCabacDecEngineFromBS (pCtx->pCabacDecEngine, pCtx->pCurDqLayer->pBitStringAux);
-#else
-    //CABAC encoding is unsupported yet!
-    return -1;
-#endif
   }
 
   iNextMbXyIndex = pSliceHeader->iFirstMbInSlice;
@@ -1014,58 +986,24 @@ int32_t WelsDecodeSlice (PWelsDecoderContext pCtx, bool bFirstSliceInLayer, PNal
     }
 
     pCurLayer->pSliceIdc[iNextMbXyIndex] = iSliceIdc;
-#ifdef CABAC_ENABLED
     if (pCtx->pPps->bEntropyCodingModeFlag)
-      iRet = pDecMbCabacFunc (pCtx, pNalCur, uiEosFlag);
+      iRet = pDecMbFunc (pCtx, pNalCur, uiEosFlag);
     else
-#endif
-      iRet = pDecMbCavlcFunc (pCtx,  pNalCur);
+      iRet = pDecMbFunc (pCtx,  pNalCur, uiEosFlag);
 
     if (iRet != ERR_NONE) {
       return iRet;
     }
 
     ++pSlice->iTotalMbInCurSlice;
-#ifdef CABAC_ENABLED
     if (uiEosFlag) { //end of slice
       break;
     }
-#endif
     if (pSliceHeader->pPps->uiNumSliceGroups > 1) {
       iNextMbXyIndex = FmoNextMb (pFmo, iNextMbXyIndex);
     } else {
       ++iNextMbXyIndex;
     }
-
-#ifdef CABAC_ENABLED
-    if (!pCtx->pPps->bEntropyCodingModeFlag) {
-
-      // check whether there is left bits to read next time in case multiple slices
-      iUsedBits = ((pBs->pCurBuf - pBs->pStartBuf) << 3) - (16 - pBs->iLeftBits);
-      // sub 1, for stop bit
-      if (iUsedBits == (pBs->iBits-1) && 0 >= pCurLayer->sLayerInfo.sSliceInLayer.iMbSkipRun) {	// slice boundary
-        break;
-      }
-      if (iUsedBits > (pBs->iBits-1)) { //When BS incomplete, as long as find it, SHOULD stop decoding to avoid mosaic or crash.
-        WelsLog (& (pCtx->sLogCtx), WELS_LOG_WARNING,
-                 "WelsDecodeSlice()::::pBs incomplete, iUsedBits:%"PRId64" > pBs->iBits:%d, MUST stop decoding.",
-                 (int64_t) iUsedBits, pBs->iBits);
-        return -1;
-      }
-    }
-#else
-    // check whether there is left bits to read next time in case multiple slices
-    iUsedBits = ((pBs->pCurBuf - pBs->pStartBuf) << 3) - (16 - pBs->iLeftBits);
-    if (iUsedBits == pBs->iBits && 0 >= pCurLayer->sLayerInfo.sSliceInLayer.iMbSkipRun) {	// slice boundary
-      break;
-    }
-    if (iUsedBits > pBs->iBits) { //When BS incomplete, as long as find it, SHOULD stop decoding to avoid mosaic or crash.
-      WelsLog (& (pCtx->sLogCtx), WELS_LOG_WARNING,
-               "WelsDecodeSlice()::::pBs incomplete, iUsedBits:%"PRId64" > pBs->iBits:%d, MUST stop decoding.",
-               (int64_t) iUsedBits, pBs->iBits);
-      return -1;
-    }
-#endif
     iMbX = iNextMbXyIndex % pCurLayer->iMbWidth;
     iMbY = iNextMbXyIndex / pCurLayer->iMbWidth;
     pCurLayer->iMbX =  iMbX;
@@ -1098,9 +1036,7 @@ int32_t WelsActualDecodeMbCavlcISlice (PWelsDecoderContext pCtx) {
   int32_t iCode;
 
   ENFORCE_STACK_ALIGN_1D (uint8_t, pNonZeroCount, 48, 16);
-#ifdef CABAC_ENABLED
   GetNeighborAvailMbType (&sNeighAvail, pCurLayer);
-#endif
   pCurLayer->pInterPredictionDoneFlag[iMbXy] = 0;
   pCurLayer->pResidualPredFlag[iMbXy] = pSlice->sSliceHeaderExt.bDefaultResidualPredFlag;
 
@@ -1164,11 +1100,7 @@ int32_t WelsActualDecodeMbCavlcISlice (PWelsDecoderContext pCtx) {
     ENFORCE_STACK_ALIGN_1D (int8_t, pIntraPredMode, 48, 16);
     pCurLayer->pMbType[iMbXy] = MB_TYPE_INTRA4x4;
     pCtx->pFillInfoCacheIntra4x4Func (&sNeighAvail, pNonZeroCount, pIntraPredMode, pCurLayer);
-#ifdef CABAC_ENABLED
     if (ParseIntra4x4Mode (pCtx, &sNeighAvail, pIntraPredMode, pBs, pCurLayer)) {
-#else
-    if (pCtx->pParseIntra4x4ModeFunc (&sNeighAvail, pIntraPredMode, pBs, pCurLayer)) {
-#endif
       return -1;
     }
 
@@ -1191,11 +1123,7 @@ int32_t WelsActualDecodeMbCavlcISlice (PWelsDecoderContext pCtx) {
     uiCbpC = pCurLayer->pCbp[iMbXy] >> 4;
     uiCbpL = pCurLayer->pCbp[iMbXy] & 15;
     WelsFillCacheNonZeroCount (&sNeighAvail, pNonZeroCount, pCurLayer);
-#ifdef CABAC_ENABLED
     if (ParseIntra16x16Mode (pCtx, &sNeighAvail, pBs, pCurLayer)) {
-#else
-    if (pCtx->pParseIntra16x16ModeFunc (&sNeighAvail, pBs, pCurLayer)) {
-#endif
       return -1;
     }
   }
@@ -1314,14 +1242,15 @@ int32_t WelsActualDecodeMbCavlcISlice (PWelsDecoderContext pCtx) {
   return 0;
 }
 
-int32_t WelsDecodeMbCavlcISlice (PWelsDecoderContext pCtx, PNalUnit pNalCur) {
+int32_t WelsDecodeMbCavlcISlice (PWelsDecoderContext pCtx, PNalUnit pNalCur, uint32_t& uiEosFlag) {
   PDqLayer pCurLayer = pCtx->pCurDqLayer;
   PBitStringAux pBs = pCurLayer->pBitStringAux;
   PSliceHeaderExt pSliceHeaderExt = &pCurLayer->sLayerInfo.sSliceInLayer.sSliceHeaderExt;
   int32_t iBaseModeFlag;
   int32_t iRet = 0; //should have the return value to indicate decoding error or not, It's NECESSARY--2010.4.15
   uint32_t uiCode;
-
+  intX_t iUsedBits;
+  
   if (pSliceHeaderExt->bAdaptiveBaseModeFlag == 1) {
     WELS_READ_VERIFY (BsGetOneBit (pBs, &uiCode)); //base_mode_flag
     iBaseModeFlag = uiCode;
@@ -1339,6 +1268,18 @@ int32_t WelsDecodeMbCavlcISlice (PWelsDecoderContext pCtx, PNalUnit pNalCur) {
     return iRet;
   }
 
+  // check whether there is left bits to read next time in case multiple slices
+  iUsedBits = ((pBs->pCurBuf - pBs->pStartBuf) << 3) - (16 - pBs->iLeftBits);
+  // sub 1, for stop bit
+  if (iUsedBits == (pBs->iBits-1) && 0 >= pCurLayer->sLayerInfo.sSliceInLayer.iMbSkipRun) {	// slice boundary
+    uiEosFlag = 1;
+  }
+  if (iUsedBits > (pBs->iBits-1)) { //When BS incomplete, as long as find it, SHOULD stop decoding to avoid mosaic or crash.
+    WelsLog (& (pCtx->sLogCtx), WELS_LOG_WARNING,
+             "WelsDecodeMbCavlcISlice()::::pBs incomplete, iUsedBits:%"PRId64" > pBs->iBits:%d, MUST stop decoding.",
+             (int64_t) iUsedBits, pBs->iBits);
+    return -1;
+  }
   return 0;
 }
 
@@ -1361,9 +1302,7 @@ int32_t WelsActualDecodeMbCavlcPSlice (PWelsDecoderContext pCtx) {
   uint32_t uiMbType = 0, uiCbp = 0, uiCbpL = 0, uiCbpC = 0;
   uint32_t uiCode;
   int32_t iCode;
-#ifdef CABAC_ENABLED
   GetNeighborAvailMbType (&sNeighAvail, pCurLayer);
-#endif
   ENFORCE_STACK_ALIGN_1D (uint8_t, pNonZeroCount, 48, 16);
   pCurLayer->pInterPredictionDoneFlag[iMbXy] = 0;//2009.10.23
   WELS_READ_VERIFY (BsGetUe (pBs, &uiCode)); //uiMbType
@@ -1458,11 +1397,7 @@ int32_t WelsActualDecodeMbCavlcPSlice (PWelsDecoderContext pCtx) {
         ENFORCE_STACK_ALIGN_1D (int8_t, pIntraPredMode, 48, 16);
         pCurLayer->pMbType[iMbXy] = MB_TYPE_INTRA4x4;
         pCtx->pFillInfoCacheIntra4x4Func (&sNeighAvail, pNonZeroCount, pIntraPredMode, pCurLayer);
-#ifdef CABAC_ENABLED
         if (ParseIntra4x4Mode (pCtx, &sNeighAvail, pIntraPredMode, pBs, pCurLayer)) {
-#else
-        if (pCtx->pParseIntra4x4ModeFunc (&sNeighAvail, pIntraPredMode, pBs, pCurLayer)) {
-#endif
           return -1;
         }
       } else { //I_PCM exclude, we can ignore it
@@ -1472,11 +1407,7 @@ int32_t WelsActualDecodeMbCavlcPSlice (PWelsDecoderContext pCtx) {
         uiCbpC = pCurLayer->pCbp[iMbXy] >> 4;
         uiCbpL = pCurLayer->pCbp[iMbXy] & 15;
         WelsFillCacheNonZeroCount (&sNeighAvail, pNonZeroCount, pCurLayer);
-#ifdef CABAC_ENABLED
         if (ParseIntra16x16Mode (pCtx, &sNeighAvail, pBs, pCurLayer)) {
-#else
-        if (pCtx->pParseIntra16x16ModeFunc (&sNeighAvail, pBs, pCurLayer)) {
-#endif
           return -1;
         }
       }
@@ -1614,11 +1545,12 @@ int32_t WelsActualDecodeMbCavlcPSlice (PWelsDecoderContext pCtx) {
   return 0;
 }
 
-int32_t WelsDecodeMbCavlcPSlice (PWelsDecoderContext pCtx, PNalUnit pNalCur) {
+int32_t WelsDecodeMbCavlcPSlice (PWelsDecoderContext pCtx, PNalUnit pNalCur, uint32_t& uiEosFlag) {
   PDqLayer pCurLayer		 = pCtx->pCurDqLayer;
   PBitStringAux pBs		 = pCurLayer->pBitStringAux;
   PSlice pSlice			 = &pCurLayer->sLayerInfo.sSliceInLayer;
   PSliceHeader pSliceHeader		    = &pSlice->sSliceHeaderExt.sSliceHeader;
+  intX_t iUsedBits;
 
   const int32_t iMbXy = pCurLayer->iMbXyIndex;
   int8_t* pNzc = pCurLayer->pNzc[iMbXy];
@@ -1632,7 +1564,6 @@ int32_t WelsDecodeMbCavlcPSlice (PWelsDecoderContext pCtx, PNalUnit pNalCur) {
     if (-1 == pSlice->iMbSkipRun) {
       return -1;
     }
-
   }
   if (pSlice->iMbSkipRun--) {
     int16_t iMv[2];
@@ -1667,27 +1598,36 @@ int32_t WelsDecodeMbCavlcPSlice (PWelsDecoderContext pCtx, PNalUnit pNalCur) {
     }
 
     pCurLayer->pCbp[iMbXy] = 0;
-
-    return 0;
-  }
-
-  if (pSlice->sSliceHeaderExt.bAdaptiveBaseModeFlag == 1) {
-    WELS_READ_VERIFY (BsGetOneBit (pBs, &uiCode)); //base_mode_flag
-    iBaseModeFlag = uiCode;
   } else {
-    iBaseModeFlag = pSlice->sSliceHeaderExt.bDefaultBaseModeFlag;
+    if (pSlice->sSliceHeaderExt.bAdaptiveBaseModeFlag == 1) {
+      WELS_READ_VERIFY (BsGetOneBit (pBs, &uiCode)); //base_mode_flag
+      iBaseModeFlag = uiCode;
+    } else {
+      iBaseModeFlag = pSlice->sSliceHeaderExt.bDefaultBaseModeFlag;
+    }
+    if (!iBaseModeFlag) {
+      iRet = WelsActualDecodeMbCavlcPSlice (pCtx);
+    } else {
+      WelsLog (& (pCtx->sLogCtx), WELS_LOG_WARNING, "iBaseModeFlag (%d) != 0, inter-layer prediction not supported.",
+               iBaseModeFlag);
+      return GENERATE_ERROR_NO (ERR_LEVEL_SLICE_HEADER, ERR_INFO_UNSUPPORTED_ILP);
+    }
+    if (iRet) { //occur error when parsing, MUST STOP decoding
+      return iRet;
+    }
   }
-  if (!iBaseModeFlag) {
-    iRet = WelsActualDecodeMbCavlcPSlice (pCtx);
-  } else {
-    WelsLog (& (pCtx->sLogCtx), WELS_LOG_WARNING, "iBaseModeFlag (%d) != 0, inter-layer prediction not supported.",
-             iBaseModeFlag);
-    return GENERATE_ERROR_NO (ERR_LEVEL_SLICE_HEADER, ERR_INFO_UNSUPPORTED_ILP);
+  // check whether there is left bits to read next time in case multiple slices
+  iUsedBits = ((pBs->pCurBuf - pBs->pStartBuf) << 3) - (16 - pBs->iLeftBits);
+  // sub 1, for stop bit
+  if (iUsedBits == (pBs->iBits-1) && 0 >= pCurLayer->sLayerInfo.sSliceInLayer.iMbSkipRun) {	// slice boundary
+    uiEosFlag = 1;
   }
-  if (iRet) { //occur error when parsing, MUST STOP decoding
-    return iRet;
+  if (iUsedBits > (pBs->iBits-1)) { //When BS incomplete, as long as find it, SHOULD stop decoding to avoid mosaic or crash.
+    WelsLog (& (pCtx->sLogCtx), WELS_LOG_WARNING,
+             "WelsDecodeMbCavlcISlice()::::pBs incomplete, iUsedBits:%"PRId64" > pBs->iBits:%d, MUST stop decoding.",
+             (int64_t) iUsedBits, pBs->iBits);
+    return -1;
   }
-
   return 0;
 }
 
@@ -1705,7 +1645,7 @@ void WelsBlockFuncInit (SBlockFunc*   pFunc,  int32_t iCpu) {
     pFunc->pWelsSetNonZeroCountFunc		= SetNonZeroCount_AArch64_neon;
   }
 #endif
-#ifdef CABAC_ENABLED
+
   pFunc->pWelsBlockZero16x16Func	    = WelsBlockZero16x16_c;
   pFunc->pWelsBlockZero8x8Func	    = WelsBlockZero8x8_c;
   //TO DO add neon and X86
@@ -1720,7 +1660,6 @@ void WelsBlockFuncInit (SBlockFunc*   pFunc,  int32_t iCpu) {
 
   }
 #endif
-#endif
 }
 
 void SetNonZeroCount_c (int8_t* pNonZeroCount) {
@@ -1730,7 +1669,7 @@ void SetNonZeroCount_c (int8_t* pNonZeroCount) {
     pNonZeroCount[i] = !!pNonZeroCount[i];
   }
 }
-#ifdef CABAC_ENABLED
+
 void WelsBlockInit (int16_t* block, int w, int h, int stride, uint8_t val) {
   int i;
   int16_t* ptr_dest = block;
@@ -1747,5 +1686,5 @@ void WelsBlockZero16x16_c (int16_t* block, int32_t stride) {
 void WelsBlockZero8x8_c (int16_t* block, int32_t stride) {
   WelsBlockInit (block, 8, 8, stride, 0);
 }
-#endif
+
 } // namespace WelsDec

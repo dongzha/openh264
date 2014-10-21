@@ -656,10 +656,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\..\..\decoder\core\inc\cabac_ctx_tables.h"
-					>
-				</File>
-				<File
 					RelativePath="..\..\..\decoder\core\inc\cabac_decoder.h"
 					>
 				</File>
