@@ -112,8 +112,8 @@ void UpdateP8x8RefIdxCabac (PDqLayer pCurDqLayer, int8_t pRefIndex[LIST_A][30], 
 
 void UpdateP16x16MvdCabac (SDqLayer* pCurDqLayer, int16_t pMvd[2], const int8_t iListIdx) {
   int32_t pMvd32[2];
-  ST32(&pMvd32[0], LD32 (pMvd));
-  ST32(&pMvd32[1], LD32 (pMvd));
+  ST32 (&pMvd32[0], LD32 (pMvd));
+  ST32 (&pMvd32[1], LD32 (pMvd));
   int32_t i;
   int32_t iMbXy = pCurDqLayer->iMbXyIndex;
   for (i = 0; i < 16; i += 2) {
@@ -124,8 +124,8 @@ void UpdateP16x16MvdCabac (SDqLayer* pCurDqLayer, int16_t pMvd[2], const int8_t 
 void UpdateP16x8MvdCabac (SDqLayer* pCurDqLayer, int16_t pMvdCache[LIST_A][30][MV_A], int32_t iPartIdx, int16_t pMvd[2],
                           const int8_t iListIdx) {
   int32_t pMvd32[2];
-  ST32(&pMvd32[0], LD32 (pMvd));
-  ST32(&pMvd32[1], LD32 (pMvd));
+  ST32 (&pMvd32[0], LD32 (pMvd));
+  ST32 (&pMvd32[1], LD32 (pMvd));
   int32_t i;
   int32_t iMbXy = pCurDqLayer->iMbXyIndex;
   for (i = 0; i < 2; i++, iPartIdx += 4) {
@@ -145,8 +145,8 @@ void UpdateP16x8MvdCabac (SDqLayer* pCurDqLayer, int16_t pMvdCache[LIST_A][30][M
 void UpdateP8x16MvdCabac (SDqLayer* pCurDqLayer, int16_t pMvdCache[LIST_A][30][MV_A], int32_t iPartIdx, int16_t pMvd[2],
                           const int8_t iListIdx) {
   int32_t pMvd32[2];
-  ST32(&pMvd32[0], LD32 (pMvd));
-  ST32(&pMvd32[1], LD32 (pMvd));
+  ST32 (&pMvd32[0], LD32 (pMvd));
+  ST32 (&pMvd32[1], LD32 (pMvd));
   int32_t i;
   int32_t iMbXy = pCurDqLayer->iMbXyIndex;
 
@@ -166,7 +166,7 @@ void UpdateP8x16MvdCabac (SDqLayer* pCurDqLayer, int16_t pMvdCache[LIST_A][30][M
 
 int32_t ParseEndOfSliceCabac (PWelsDecoderContext pCtx, uint32_t& uiBinVal) {
   uiBinVal = 0;
-  WELS_READ_VERIFY( DecodeTerminateCabac (pCtx->pCabacDecEngine, uiBinVal));
+  WELS_READ_VERIFY (DecodeTerminateCabac (pCtx->pCabacDecEngine, uiBinVal));
   return ERR_NONE;
 }
 
@@ -283,9 +283,9 @@ int32_t ParseSubMBTypeCabac (PWelsDecoderContext pCtx, PWelsNeighAvail pNeighAva
   if (uiCode)
     uiSubMbType = 0;
   else {
-    WELS_READ_VERIFY (DecodeBinCabac (pCabacDecEngine, pBinCtx+1, uiCode));
+    WELS_READ_VERIFY (DecodeBinCabac (pCabacDecEngine, pBinCtx + 1, uiCode));
     if (uiCode) {
-      WELS_READ_VERIFY (DecodeBinCabac (pCabacDecEngine, pBinCtx+2, uiCode));
+      WELS_READ_VERIFY (DecodeBinCabac (pCabacDecEngine, pBinCtx + 2, uiCode));
       uiSubMbType = 3 - uiCode;
     } else {
       uiSubMbType = 1;
@@ -314,21 +314,21 @@ int32_t ParseIntraPredModeLumaCabac (PWelsDecoderContext pCtx, int32_t& iBinVal)
 int32_t ParseIntraPredModeChromaCabac (PWelsDecoderContext pCtx, uint8_t uiNeighAvail, int32_t& iBinVal) {
   uint32_t uiCode;
   int32_t iIdxA, iIdxB, iCtxInc;
-  int8_t* chroma_pred_mode = pCtx->pCurDqLayer->pChromaPredMode;
+  int8_t* pChromaPredMode = pCtx->pCurDqLayer->pChromaPredMode;
   int8_t* pMbType = pCtx->pCurDqLayer->pMbType;
-  int32_t left_avail     = uiNeighAvail & 0x04;
-  int32_t top_avail      = uiNeighAvail & 0x01;
+  int32_t iLeftAvail     = uiNeighAvail & 0x04;
+  int32_t iTopAvail      = uiNeighAvail & 0x01;
 
   int32_t iMbXy = pCtx->pCurDqLayer->iMbXyIndex;
-  int32_t mb_xy_top = iMbXy - pCtx->pCurDqLayer->iMbWidth;
-  int32_t mb_xy_left = iMbXy - 1;
+  int32_t iMbXyTop = iMbXy - pCtx->pCurDqLayer->iMbWidth;
+  int32_t iMbXyLeft = iMbXy - 1;
 
   iBinVal = 0;
 
-  iIdxB = top_avail  && (chroma_pred_mode[mb_xy_top] > 0 && chroma_pred_mode[mb_xy_top] <= 3)
-          && pMbType[mb_xy_top]  != MB_TYPE_INTRA_PCM;
-  iIdxA = left_avail && (chroma_pred_mode[mb_xy_left] > 0 && chroma_pred_mode[mb_xy_left] <= 3)
-          && pMbType[mb_xy_left] != MB_TYPE_INTRA_PCM;
+  iIdxB = iTopAvail  && (pChromaPredMode[iMbXyTop] > 0 && pChromaPredMode[iMbXyTop] <= 3)
+          && pMbType[iMbXyTop]  != MB_TYPE_INTRA_PCM;
+  iIdxA = iLeftAvail && (pChromaPredMode[iMbXyLeft] > 0 && pChromaPredMode[iMbXyLeft] <= 3)
+          && pMbType[iMbXyLeft] != MB_TYPE_INTRA_PCM;
   iCtxInc = iIdxA + iIdxB;
   WELS_READ_VERIFY (DecodeBinCabac (pCtx->pCabacDecEngine, pCtx->pCabacCtx + NEW_CTX_OFFSET_CIPR + iCtxInc, uiCode));
   iBinVal = uiCode;
@@ -484,9 +484,9 @@ int32_t ParseInterMotionInfoCabac (PWelsDecoderContext pCtx, PWelsNeighAvail pNe
       uiSubMbType = pCurDqLayer->pSubMbType[iMbXy][i];
       int16_t iPartIdx, iBlockW = pPartW[i];
       uint8_t iScan4Idx, iCacheIdx;
-      iCacheIdx = g_kuiCache30ScanIdx[i<<2];
-      pRefIndex[0][iCacheIdx ] = pRefIndex[0][iCacheIdx + 1] 
-                               = pRefIndex[0][iCacheIdx + 6] = pRefIndex[0][iCacheIdx + 7] = pRefIdx[i];
+      iCacheIdx = g_kuiCache30ScanIdx[i << 2];
+      pRefIndex[0][iCacheIdx ] = pRefIndex[0][iCacheIdx + 1]
+                                 = pRefIndex[0][iCacheIdx + 6] = pRefIndex[0][iCacheIdx + 7] = pRefIdx[i];
 
       for (j = 0; j < iPartCount; j++) {
         iPartIdx = (i << 2) + j * iBlockW;
@@ -671,7 +671,8 @@ int32_t ParseCbpInfoCabac (PWelsDecoderContext pCtx, PWelsNeighAvail pNeighAvail
     iIdxB = pNeighAvail->iTopAvail  && (pNeighAvail->iTopType  == MB_TYPE_INTRA_PCM || (pNeighAvail->iTopCbp  >> 4) == 2);
     iIdxA = pNeighAvail->iLeftAvail && (pNeighAvail->iLeftType == MB_TYPE_INTRA_PCM || (pNeighAvail->iLeftCbp >> 4) == 2);
     iCtxInc = iIdxA + (iIdxB << 1);
-    WELS_READ_VERIFY (DecodeBinCabac (pCtx->pCabacDecEngine, pCtx->pCabacCtx + NEW_CTX_OFFSET_CBP + 2 * CTX_NUM_CBP + iCtxInc,
+    WELS_READ_VERIFY (DecodeBinCabac (pCtx->pCabacDecEngine,
+                                      pCtx->pCabacCtx + NEW_CTX_OFFSET_CBP + 2 * CTX_NUM_CBP + iCtxInc,
                                       pCbpBit[5]));
     uiCbp += 1 << (4 + pCbpBit[5]);
   }
@@ -825,7 +826,7 @@ int32_t ParseResidualBlockCabac (PWelsNeighAvail pNeighAvail, uint8_t* pNonZeroC
 
   iCurNzCacheIdx = g_kCacheNzcScanIdx[iIndex];
   pNonZeroCountCache[iCurNzCacheIdx] = (uint8_t)uiTotalCoeffNum;
-  if( uiTotalCoeffNum==0 ) {
+  if (uiTotalCoeffNum == 0) {
     return ERR_NONE;
   }
   int32_t j = 0;

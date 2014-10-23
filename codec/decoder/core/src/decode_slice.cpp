@@ -937,9 +937,8 @@ int32_t WelsDecodeSlice (PWelsDecoderContext pCtx, bool bFirstSliceInLayer, PNal
   }
 
   pCtx->eSliceType = pSliceHeader->eSliceType;
-  
   if (pCurLayer->sLayerInfo.pPps->bEntropyCodingModeFlag == 1) {
-    int32_t iQp = WELS_MAX (0, pSlice->sSliceHeaderExt.sSliceHeader.iSliceQp);
+    int32_t iQp = pSlice->sSliceHeaderExt.sSliceHeader.iSliceQp;
     int32_t iCabacInitIdc = pSlice->sSliceHeaderExt.sSliceHeader.iCabacInitIdc;
     WelsCabacContextInit (pCtx, pSlice->eSliceType, iCabacInitIdc, iQp);
     //InitCabacCtx (pCtx->pCabacCtx, pSlice->eSliceType, iCabacInitIdc, iQp);
@@ -986,10 +985,7 @@ int32_t WelsDecodeSlice (PWelsDecoderContext pCtx, bool bFirstSliceInLayer, PNal
     }
 
     pCurLayer->pSliceIdc[iNextMbXyIndex] = iSliceIdc;
-    if (pCtx->pPps->bEntropyCodingModeFlag)
-      iRet = pDecMbFunc (pCtx, pNalCur, uiEosFlag);
-    else
-      iRet = pDecMbFunc (pCtx,  pNalCur, uiEosFlag);
+    iRet = pDecMbFunc (pCtx,  pNalCur, uiEosFlag);
 
     if (iRet != ERR_NONE) {
       return iRet;
@@ -1250,7 +1246,6 @@ int32_t WelsDecodeMbCavlcISlice (PWelsDecoderContext pCtx, PNalUnit pNalCur, uin
   int32_t iRet = 0; //should have the return value to indicate decoding error or not, It's NECESSARY--2010.4.15
   uint32_t uiCode;
   intX_t iUsedBits;
-  
   if (pSliceHeaderExt->bAdaptiveBaseModeFlag == 1) {
     WELS_READ_VERIFY (BsGetOneBit (pBs, &uiCode)); //base_mode_flag
     iBaseModeFlag = uiCode;
@@ -1271,10 +1266,11 @@ int32_t WelsDecodeMbCavlcISlice (PWelsDecoderContext pCtx, PNalUnit pNalCur, uin
   // check whether there is left bits to read next time in case multiple slices
   iUsedBits = ((pBs->pCurBuf - pBs->pStartBuf) << 3) - (16 - pBs->iLeftBits);
   // sub 1, for stop bit
-  if (iUsedBits == (pBs->iBits-1) && 0 >= pCurLayer->sLayerInfo.sSliceInLayer.iMbSkipRun) {	// slice boundary
+  if ((iUsedBits == (pBs->iBits - 1)) && (0 >= pCurLayer->sLayerInfo.sSliceInLayer.iMbSkipRun)) {	// slice boundary
     uiEosFlag = 1;
   }
-  if (iUsedBits > (pBs->iBits-1)) { //When BS incomplete, as long as find it, SHOULD stop decoding to avoid mosaic or crash.
+  if (iUsedBits > (pBs->iBits -
+                   1)) { //When BS incomplete, as long as find it, SHOULD stop decoding to avoid mosaic or crash.
     WelsLog (& (pCtx->sLogCtx), WELS_LOG_WARNING,
              "WelsDecodeMbCavlcISlice()::::pBs incomplete, iUsedBits:%"PRId64" > pBs->iBits:%d, MUST stop decoding.",
              (int64_t) iUsedBits, pBs->iBits);
@@ -1551,7 +1547,6 @@ int32_t WelsDecodeMbCavlcPSlice (PWelsDecoderContext pCtx, PNalUnit pNalCur, uin
   PSlice pSlice			 = &pCurLayer->sLayerInfo.sSliceInLayer;
   PSliceHeader pSliceHeader		    = &pSlice->sSliceHeaderExt.sSliceHeader;
   intX_t iUsedBits;
-
   const int32_t iMbXy = pCurLayer->iMbXyIndex;
   int8_t* pNzc = pCurLayer->pNzc[iMbXy];
   int32_t iBaseModeFlag, i;
@@ -1619,10 +1614,11 @@ int32_t WelsDecodeMbCavlcPSlice (PWelsDecoderContext pCtx, PNalUnit pNalCur, uin
   // check whether there is left bits to read next time in case multiple slices
   iUsedBits = ((pBs->pCurBuf - pBs->pStartBuf) << 3) - (16 - pBs->iLeftBits);
   // sub 1, for stop bit
-  if (iUsedBits == (pBs->iBits-1) && 0 >= pCurLayer->sLayerInfo.sSliceInLayer.iMbSkipRun) {	// slice boundary
+  if ((iUsedBits == (pBs->iBits - 1)) && (0 >= pCurLayer->sLayerInfo.sSliceInLayer.iMbSkipRun)) {	// slice boundary
     uiEosFlag = 1;
   }
-  if (iUsedBits > (pBs->iBits-1)) { //When BS incomplete, as long as find it, SHOULD stop decoding to avoid mosaic or crash.
+  if (iUsedBits > (pBs->iBits -
+                   1)) { //When BS incomplete, as long as find it, SHOULD stop decoding to avoid mosaic or crash.
     WelsLog (& (pCtx->sLogCtx), WELS_LOG_WARNING,
              "WelsDecodeMbCavlcISlice()::::pBs incomplete, iUsedBits:%"PRId64" > pBs->iBits:%d, MUST stop decoding.",
              (int64_t) iUsedBits, pBs->iBits);
@@ -1670,21 +1666,21 @@ void SetNonZeroCount_c (int8_t* pNonZeroCount) {
   }
 }
 
-void WelsBlockInit (int16_t* block, int w, int h, int stride, uint8_t val) {
-  int i;
-  int16_t* ptr_dest = block;
+void WelsBlockInit (int16_t* pBlock, int iW, int iH, int iStride, uint8_t uiVal) {
+  int32_t i;
+  int16_t* pDst = pBlock;
 
-  for (i = 0; i < h; i++) {
-    memset (ptr_dest, val, w * sizeof (int16_t));
-    ptr_dest += stride;
+  for (i = 0; i < iH; i++) {
+    memset (pDst, uiVal, iW * sizeof (int16_t));
+    pDst += iStride;
   }
 }
-void WelsBlockZero16x16_c (int16_t* block, int32_t stride) {
-  WelsBlockInit (block, 16, 16, stride, 0);
+void WelsBlockZero16x16_c (int16_t* pBlock, int32_t iStride) {
+  WelsBlockInit (pBlock, 16, 16, iStride, 0);
 }
 
-void WelsBlockZero8x8_c (int16_t* block, int32_t stride) {
-  WelsBlockInit (block, 8, 8, stride, 0);
+void WelsBlockZero8x8_c (int16_t* pBlock, int32_t iStride) {
+  WelsBlockInit (pBlock, 8, 8, iStride, 0);
 }
 
 } // namespace WelsDec

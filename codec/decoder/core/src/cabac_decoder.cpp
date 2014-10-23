@@ -34,7 +34,7 @@
 namespace WelsDec {
 static const int16_t g_kMvdBinPos2Ctx [8] = {0, 1, 2, 3, 3, 3, 3, 3};
 
-void WelsCabacGlobalInit(PWelsDecoderContext pCtx) {
+void WelsCabacGlobalInit (PWelsDecoderContext pCtx) {
   for (int32_t iModel = 0; iModel < 4; iModel++) {
     for (int32_t iQp = 0; iQp <= WELS_QP_MAX; iQp++)
       for (int32_t iIdx = 0; iIdx < WELS_CONTEXT_COUNT; iIdx++) {
@@ -60,8 +60,8 @@ void WelsCabacGlobalInit(PWelsDecoderContext pCtx) {
 // ------------------- 1. context initialization
 void WelsCabacContextInit (PWelsDecoderContext  pCtx, uint8_t eSliceType, int32_t iCabacInitIdc, int32_t iQp) {
   int32_t iIdx =  pCtx->eSliceType == WelsCommon::I_SLICE ? 0 : iCabacInitIdc + 1;
-  if(!pCtx->bCabacInited) {
-    WelsCabacGlobalInit(pCtx);
+  if (!pCtx->bCabacInited) {
+    WelsCabacGlobalInit (pCtx);
   }
   memcpy (pCtx->pCabacCtx, pCtx->sWelsCabacContexts[iIdx][iQp],
           WELS_CONTEXT_COUNT * sizeof (SWelsCabacCtx));
@@ -244,7 +244,7 @@ int32_t DecodeTerminateCabac (PWelsCabacDecEngine pDecEngine, uint32_t& uiBinVal
 int32_t DecodeUnaryBinCabac (PWelsCabacDecEngine pDecEngine, PWelsCabacCtx pBinCtx, int32_t iCtxOffset,
                              uint32_t& uiSymVal) {
   uiSymVal = 0;
-  WELS_READ_VERIFY(DecodeBinCabac (pDecEngine, pBinCtx, uiSymVal));
+  WELS_READ_VERIFY (DecodeBinCabac (pDecEngine, pBinCtx, uiSymVal));
   if (uiSymVal == 0) {
     return ERR_NONE;
   } else {
@@ -252,7 +252,7 @@ int32_t DecodeUnaryBinCabac (PWelsCabacDecEngine pDecEngine, PWelsCabacCtx pBinC
     pBinCtx += iCtxOffset;
     uiSymVal = 0;
     do {
-      WELS_READ_VERIFY(DecodeBinCabac (pDecEngine, pBinCtx, uiCode));
+      WELS_READ_VERIFY (DecodeBinCabac (pDecEngine, pBinCtx, uiCode));
       ++uiSymVal;
     } while (uiCode != 0);
     return ERR_NONE;
@@ -265,7 +265,7 @@ int32_t DecodeExpBypassCabac (PWelsCabacDecEngine pDecEngine, int32_t iCount, ui
   int32_t iSymTmp2 = 0;
   uiSymVal = 0;
   do {
-    WELS_READ_VERIFY(DecodeBypassCabac (pDecEngine, uiCode));
+    WELS_READ_VERIFY (DecodeBypassCabac (pDecEngine, uiCode));
     if (uiCode == 1) {
       iSymTmp += (1 << iCount);
       ++iCount;
@@ -273,7 +273,7 @@ int32_t DecodeExpBypassCabac (PWelsCabacDecEngine pDecEngine, int32_t iCount, ui
   } while (uiCode != 0);
 
   while (iCount--) {
-    WELS_READ_VERIFY(DecodeBypassCabac (pDecEngine, uiCode));
+    WELS_READ_VERIFY (DecodeBypassCabac (pDecEngine, uiCode));
     if (uiCode == 1) {
       iSymTmp2 |= (1 << iCount);
     }
@@ -306,14 +306,14 @@ uint32_t DecodeUEGLevelCabac (PWelsCabacDecEngine pDecEngine, PWelsCabacCtx pBin
 }
 
 int32_t DecodeUEGMvCabac (PWelsCabacDecEngine pDecEngine, PWelsCabacCtx pBinCtx, uint32_t iMaxBin,  uint32_t& uiCode) {
-  WELS_READ_VERIFY (DecodeBinCabac (pDecEngine, pBinCtx+g_kMvdBinPos2Ctx[0], uiCode));
+  WELS_READ_VERIFY (DecodeBinCabac (pDecEngine, pBinCtx + g_kMvdBinPos2Ctx[0], uiCode));
   if (uiCode == 0)
     return ERR_NONE;
   else {
     uint32_t uiTmp, uiCount = 1;
     uiCode = 0;
     do {
-      WELS_READ_VERIFY (DecodeBinCabac (pDecEngine, pBinCtx+g_kMvdBinPos2Ctx[uiCount++], uiTmp));
+      WELS_READ_VERIFY (DecodeBinCabac (pDecEngine, pBinCtx + g_kMvdBinPos2Ctx[uiCount++], uiTmp));
       uiCode++;
     } while (uiTmp != 0 && uiCount != 8);
 

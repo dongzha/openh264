@@ -100,7 +100,6 @@ enum {
     BASE_MB = 0,
     NON_AVC_REWRITE_ENHANCE_MB =1,
     AVC_REWRITE_ENHANCE_MB = 2
-    
 };
 
 #endif//WELS_CONSTANCE_H__

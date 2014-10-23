@@ -56,21 +56,18 @@
 #include "expand_pic.h"
 
 namespace WelsDec {
-
-    
 #define MAX_PRED_MODE_ID_I16x16  3
 #define MAX_PRED_MODE_ID_CHROMA  3
 #define MAX_PRED_MODE_ID_I4x4    8
 #define  WELS_QP_MAX    51
 #define  WELS_CONTEXT_COUNT 460
 #define  CTX_NA 0
-    
 
 typedef struct SWels_Cabac_Element {
   uint8_t uiState;
   uint8_t uiMPS;
 }SWelsCabacCtx, *PWelsCabacCtx;
-  
+
 typedef struct
 {
   uint64_t uiRange;
@@ -80,7 +77,7 @@ typedef struct
   uint8_t *pBuffCurr;
   uint8_t *pBuffEnd;
 } SWelsCabacDecEngine, *PWelsCabacDecEngine;
-    
+
 #define NEW_CTX_OFFSET_MB_TYPE_I 3
 #define NEW_CTX_OFFSET_SKIP 11
 #define NEW_CTX_OFFSET_SUBMB_TYPE 21
@@ -98,7 +95,6 @@ typedef struct
 #define CTX_NUM_MVD 7
 #define CTX_NUM_CBP 4
 
-    
 typedef struct TagDataBuffer {
 uint8_t* pHead;
 uint8_t* pEnd;

@@ -132,7 +132,7 @@ typedef int32_t SubMbType;
 #define CHROMA_DC_V  7
 #define CHROMA_AC_U  8
 #define CHROMA_AC_V  9
-    
+
 typedef struct TagReadBitsCache {
     uint32_t uiCache32Bit;
     uint8_t  uiRemainBits;

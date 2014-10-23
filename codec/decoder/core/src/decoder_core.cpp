@@ -707,12 +707,11 @@ int32_t ParseSliceHeaderSyntaxs (PWelsDecoderContext pCtx, PBitStringAux pBs, co
   }
 
   if (pPps->bEntropyCodingModeFlag) {
-      if(pSliceHead->eSliceType != I_SLICE && pSliceHead->eSliceType != SI_SLICE ) {
-          WELS_READ_VERIFY (BsGetUe(pBs,&uiCode));
-          pSliceHead->iCabacInitIdc = uiCode;
-      }
-      else
-          pSliceHead->iCabacInitIdc = 0;
+    if (pSliceHead->eSliceType != I_SLICE && pSliceHead->eSliceType != SI_SLICE) {
+      WELS_READ_VERIFY (BsGetUe (pBs, &uiCode));
+      pSliceHead->iCabacInitIdc = uiCode;
+    } else
+      pSliceHead->iCabacInitIdc = 0;
   }
 
   WELS_READ_VERIFY (BsGetSe (pBs, &iCode)); //slice_qp_delta
@@ -1025,8 +1024,10 @@ int32_t InitialDqLayersContext (PWelsDecoderContext pCtx, const int32_t kiMaxWid
                            "pCtx->sMb.pLumaQp[]");
     pCtx->sMb.pChromaQp[i] = (int8_t*)WelsMalloc (pCtx->sMb.iMbWidth * pCtx->sMb.iMbHeight * sizeof (int8_t),
                              "pCtx->sMb.pChromaQp[]");
-    pCtx->sMb.pMvd[i][0] = (int16_t (*)[16][2])WelsMalloc( pCtx->sMb.iMbWidth * pCtx->sMb.iMbHeight * sizeof(int16_t) * MV_A * MB_BLOCK4x4_NUM, "pCtx->sMb.pMvd[][]");
-    pCtx->sMb.pCbfDc[i] = (uint8_t *)WelsMalloc( pCtx->sMb.iMbWidth * pCtx->sMb.iMbHeight * sizeof(uint8_t), "pCtx->sMb.pCbfDc[]");
+    pCtx->sMb.pMvd[i][0] = (int16_t (*)[16][2])WelsMalloc (pCtx->sMb.iMbWidth * pCtx->sMb.iMbHeight * sizeof (
+                             int16_t) * MV_A * MB_BLOCK4x4_NUM, "pCtx->sMb.pMvd[][]");
+    pCtx->sMb.pCbfDc[i] = (uint8_t*)WelsMalloc (pCtx->sMb.iMbWidth * pCtx->sMb.iMbHeight * sizeof (uint8_t),
+                          "pCtx->sMb.pCbfDc[]");
     pCtx->sMb.pNzc[i] = (int8_t (*)[24])WelsMalloc (pCtx->sMb.iMbWidth * pCtx->sMb.iMbHeight * sizeof (int8_t) * 24,
                         "pCtx->sMb.pNzc[]");
     pCtx->sMb.pNzcRs[i] = (int8_t (*)[24])WelsMalloc (pCtx->sMb.iMbWidth * pCtx->sMb.iMbHeight * sizeof (int8_t) * 24,
@@ -1131,17 +1132,13 @@ void UninitialDqLayersContext (PWelsDecoderContext pCtx) {
       pCtx->sMb.pChromaQp[i] = NULL;
     }
 
-    if (pCtx->sMb.pMvd[i][0])
-    {
-      WelsFree( pCtx->sMb.pMvd[i][0], "pCtx->sMb.pMvd[][]" );
-      
+    if (pCtx->sMb.pMvd[i][0]) {
+      WelsFree (pCtx->sMb.pMvd[i][0], "pCtx->sMb.pMvd[][]");
       pCtx->sMb.pMvd[i][0] = NULL;
     }
 
-    if (pCtx->sMb.pCbfDc[i])
-    {
-      WelsFree(pCtx->sMb.pCbfDc[i], "pCtx->sMb.pCbfDc[]");
-      
+    if (pCtx->sMb.pCbfDc[i]) {
+      WelsFree (pCtx->sMb.pCbfDc[i], "pCtx->sMb.pCbfDc[]");
       pCtx->sMb.pCbfDc[i] = NULL;
     }
 
