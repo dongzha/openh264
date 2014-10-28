@@ -123,7 +123,8 @@ static const FileParam kFileParamArray[] = {
   {"res/test_cif_I_CABAC_PCM.264", "95fdf21470d3bbcf95505abb2164042063a79d98"},
   {"res/test_cif_I_CABAC_slice.264", "19121bc67f2b13fb8f030504fc0827e1ac6d0fdb"},
   {"res/test_cif_P_CABAC_slice.264", "521bbd0ba2422369b724c7054545cf107a56f959"},
-  {"res/test_qcif_cabac.264", "587d1d05943f3cd416bf69469975fdee05361e69"}
+  {"res/test_qcif_cabac.264", "587d1d05943f3cd416bf69469975fdee05361e69"},
+  {"res/QCIF_2P_I_allIPCM.264", "8724c0866ebdba7ebb7209a0c0c3ae3ae38a0240"}
 };
 
 INSTANTIATE_TEST_CASE_P (DecodeFile, DecoderOutputTest,

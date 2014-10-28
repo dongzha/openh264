@@ -943,7 +943,7 @@ int32_t WelsDecodeSlice (PWelsDecoderContext pCtx, bool bFirstSliceInLayer, PNal
     WelsCabacContextInit (pCtx, pSlice->eSliceType, iCabacInitIdc, iQp);
     //InitCabacCtx (pCtx->pCabacCtx, pSlice->eSliceType, iCabacInitIdc, iQp);
     pSlice->iLastDeltaQp = 0;
-    InitCabacDecEngineFromBS (pCtx->pCabacDecEngine, pCtx->pCurDqLayer->pBitStringAux);
+    WELS_READ_VERIFY (InitCabacDecEngineFromBS (pCtx->pCabacDecEngine, pCtx->pCurDqLayer->pBitStringAux));
   }
 
   iNextMbXyIndex = pSliceHeader->iFirstMbInSlice;
@@ -1085,20 +1085,18 @@ int32_t WelsActualDecodeMbCavlcISlice (PWelsDecoderContext pCtx) {
     }
 
     pBs->pCurBuf += 384;
-    InitReadBits (pBs);
 
     //step 3: update QP and pNonZeroCount
     pCurLayer->pLumaQp[iMbXy] = 0;
     pCurLayer->pChromaQp[iMbXy] = 0;
     memset (pNzc, 16, sizeof (pCurLayer->pNzc[iMbXy]));   //Rec. 9.2.1 for PCM, nzc=16
+    WELS_READ_VERIFY(InitReadBits (pBs, 0));
     return 0;
   } else if (0 == uiMbType) { //reference to JM
     ENFORCE_STACK_ALIGN_1D (int8_t, pIntraPredMode, 48, 16);
     pCurLayer->pMbType[iMbXy] = MB_TYPE_INTRA4x4;
     pCtx->pFillInfoCacheIntra4x4Func (&sNeighAvail, pNonZeroCount, pIntraPredMode, pCurLayer);
-    if (ParseIntra4x4Mode (pCtx, &sNeighAvail, pIntraPredMode, pBs, pCurLayer)) {
-      return -1;
-    }
+    WELS_READ_VERIFY (ParseIntra4x4Mode (pCtx, &sNeighAvail, pIntraPredMode, pBs, pCurLayer));
 
     //uiCbp
     WELS_READ_VERIFY (BsGetUe (pBs, &uiCode)); //coded_block_pattern
@@ -1119,9 +1117,7 @@ int32_t WelsActualDecodeMbCavlcISlice (PWelsDecoderContext pCtx) {
     uiCbpC = pCurLayer->pCbp[iMbXy] >> 4;
     uiCbpL = pCurLayer->pCbp[iMbXy] & 15;
     WelsFillCacheNonZeroCount (&sNeighAvail, pNonZeroCount, pCurLayer);
-    if (ParseIntra16x16Mode (pCtx, &sNeighAvail, pBs, pCurLayer)) {
-      return -1;
-    }
+    WELS_READ_VERIFY (ParseIntra16x16Mode (pCtx, &sNeighAvail, pBs, pCurLayer));
   }
 
   memset (pCurLayer->pScaledTCoeff[iMbXy], 0, 384 * sizeof (pCurLayer->pScaledTCoeff[iMbXy][0]));
@@ -1375,7 +1371,6 @@ int32_t WelsActualDecodeMbCavlcPSlice (PWelsDecoderContext pCtx) {
       }
 
       pBs->pCurBuf += 384;
-      InitReadBits (pBs);
 
       //step 3: update QP and pNonZeroCount
       pCurLayer->pLumaQp[iMbXy] = 0;
@@ -1387,6 +1382,7 @@ int32_t WelsActualDecodeMbCavlcPSlice (PWelsDecoderContext pCtx) {
       ST32A4 (&pNzc[12], 0x10101010);
       ST32A4 (&pNzc[16], 0x10101010);
       ST32A4 (&pNzc[20], 0x10101010);
+      WELS_READ_VERIFY (InitReadBits (pBs, 0));
       return 0;
     } else {
       if (0 == uiMbType) {

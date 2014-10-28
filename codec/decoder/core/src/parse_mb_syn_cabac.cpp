@@ -896,14 +896,14 @@ int32_t ParseIPCMInfoCabac (PWelsDecoderContext pCtx) {
   }
 
   pBsAux->pCurBuf += 384;
-  InitReadBits (pBsAux);
 
   pCurLayer->pLumaQp[iMbXy] = 0;
   pCurLayer->pChromaQp[iMbXy] = 0;
   memset (pCurLayer->pNzc[iMbXy], 16, sizeof (pCurLayer->pNzc[iMbXy]));
 
   //step 4: cabac engine init
-  InitCabacDecEngineFromBS (pCabacDecEngine, pBsAux);
+  WELS_READ_VERIFY (InitReadBits (pBsAux, 1));
+  WELS_READ_VERIFY (InitCabacDecEngineFromBS (pCabacDecEngine, pBsAux));
   return ERR_NONE;
 }
 }
