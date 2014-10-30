@@ -43,6 +43,7 @@
 #include "utils.h"
 #include "wels_const.h"
 #include "wels_common_basis.h"
+#include "wels_common_defs.h"
 #include "codec_app_def.h"
 #include "parameter_sets.h"
 #include "nalu.h"
@@ -60,8 +61,6 @@ namespace WelsDec {
 #define MAX_PRED_MODE_ID_CHROMA  3
 #define MAX_PRED_MODE_ID_I4x4    8
 #define  WELS_QP_MAX    51
-#define  WELS_CONTEXT_COUNT 460
-#define  CTX_NA 0
 
 typedef struct SWels_Cabac_Element {
   uint8_t uiState;

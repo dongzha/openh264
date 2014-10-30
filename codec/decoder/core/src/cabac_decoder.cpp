@@ -143,18 +143,18 @@ int32_t DecodeBinCabac (PWelsCabacDecEngine pDecEngine, PWelsCabacCtx pBinCtx, u
   uint64_t uiRange = pDecEngine->uiRange;
 
   int32_t iRenorm = 1;
-  uint32_t uiRangeLPS = g_kLPSTable64x4[uiState][ (uiRange >> 6) & 0x03];
+  uint32_t uiRangeLPS = g_kuiCabacRangeLps[uiState][ (uiRange >> 6) & 0x03];
   uiRange -= uiRangeLPS;
   if (uiOffset >= (uiRange << pDecEngine->iBitsLeft)) { //LPS
     uiOffset -= (uiRange << pDecEngine->iBitsLeft);
     uiBinVal ^= 0x0001;
     if (!uiState)
       pBinCtx->uiMPS ^= 0x01;
-    pBinCtx->uiState = g_kStateTransLPS64[uiState];
+    pBinCtx->uiState = g_kuiStateTransTable[uiState][0];
     iRenorm = g_kRenormTable256[uiRangeLPS];
     uiRange = (uiRangeLPS << iRenorm);
   } else {  //MPS
-    pBinCtx->uiState = g_kStateTransMPS64[uiState];
+    pBinCtx->uiState = g_kuiStateTransTable[uiState][1];
     if (uiRange >= WELS_CABAC_QUARTER) {
       pDecEngine->uiRange = uiRange;
       return ERR_NONE;
