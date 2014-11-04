@@ -890,6 +890,63 @@ int32_t WelsDecodeMbCabacPSlice (PWelsDecoderContext pCtx, PNalUnit pNalCur, uin
   return ERR_NONE;
 }
 
+void StoreMVInfoForEC (PWelsDecoderContext pCtx, PDqLayer pCurLayer, int32_t iMbXy) {
+  if(IS_INTER(pCurLayer->pMbType[iMbXy])) {
+    if(pCurLayer->pMbType[iMbXy] == MB_TYPE_8x8 || pCurLayer->pMbType[iMbXy] == MB_TYPE_8x8_REF0) {
+      ST32(pCtx->pDec->pMbModeBuff + (iMbXy << 2), LD32(pCurLayer->pSubMbType[iMbXy]));
+      for(int32_t i = 0; i < 4; i++) {
+        pCtx->pDec->pRefPicPocBuff[(iMbXy<<2)+i] = pCtx->sRefPic.pRefList[LIST_0][pCurLayer->pRefIndex[LIST_0][iMbXy][i<<2]]->iFramePoc;
+        switch (pCurLayer->pSubMbType[iMbXy][i]) {
+          case SUB_MB_TYPE_8x8:
+            ST32(&pCtx->pDec->pMVBuff[(iMbXy<<5)+(i<<3)], LD32(pCurLayer->pMv[LIST_0][iMbXy][i<<2]));
+            break;
+          case SUB_MB_TYPE_8x4:
+            ST32(&pCtx->pDec->pMVBuff[(iMbXy<<5)+(i<<3)], LD32(pCurLayer->pMv[LIST_0][iMbXy][i<<2]));
+            ST32(&pCtx->pDec->pMVBuff[(iMbXy<<5)+(i<<3)+4], LD32(pCurLayer->pMv[LIST_0][iMbXy][(i<<2)+2]));
+          case SUB_MB_TYPE_4x8:
+            ST32(&pCtx->pDec->pMVBuff[(iMbXy<<5)+(i<<3)], LD32(pCurLayer->pMv[LIST_0][iMbXy][i<<2]));
+            ST32(&pCtx->pDec->pMVBuff[(iMbXy<<5)+(i<<3)+2], LD32(pCurLayer->pMv[LIST_0][iMbXy][(i<<2)+1]));
+            break;
+          case SUB_MB_TYPE_4x4:
+            ST32(&pCtx->pDec->pMVBuff[(iMbXy<<5)+(i<<3)], LD32(pCurLayer->pMv[LIST_0][iMbXy][i<<2]));
+            ST32(&pCtx->pDec->pMVBuff[(iMbXy<<5)+(i<<3)+2], LD32(pCurLayer->pMv[LIST_0][iMbXy][(i<<2)+1]));
+            ST32(&pCtx->pDec->pMVBuff[(iMbXy<<5)+(i<<3)+4], LD32(pCurLayer->pMv[LIST_0][iMbXy][(i<<2)+2]));
+            ST32(&pCtx->pDec->pMVBuff[(iMbXy<<5)+(i<<3)+6], LD32(pCurLayer->pMv[LIST_0][iMbXy][(i<<2)+3]));
+            break;
+          default:
+            break;
+        }
+      }
+    } else {
+      pCtx->pDec->pMbModeBuff [(iMbXy << 2)] = pCurLayer->pMbType[iMbXy];
+      switch (pCurLayer->pMbType[iMbXy]) {
+        case MB_TYPE_16x16:
+        case MB_TYPE_SKIP:
+          pCtx->pDec->pRefPicPocBuff[(iMbXy<<2)] = pCtx->sRefPic.pRefList[LIST_0][pCurLayer->pRefIndex[LIST_0][iMbXy][0]]->iFramePoc;
+          ST32(&pCtx->pDec->pMVBuff[(iMbXy<<5)], LD32(pCurLayer->pMv[LIST_0][iMbXy][0]));
+          break;
+        case MB_TYPE_16x8:
+          pCtx->pDec->pRefPicPocBuff[(iMbXy<<2)] = pCtx->sRefPic.pRefList[LIST_0][pCurLayer->pRefIndex[LIST_0][iMbXy][0]]->iFramePoc;
+          pCtx->pDec->pRefPicPocBuff[(iMbXy<<2)+2] = pCtx->sRefPic.pRefList[LIST_0][pCurLayer->pRefIndex[LIST_0][iMbXy][8]]->iFramePoc;
+          ST32(&pCtx->pDec->pMVBuff[(iMbXy<<5)], LD32(pCurLayer->pMv[LIST_0][iMbXy][0]));
+          ST32(&pCtx->pDec->pMVBuff[(iMbXy<<5)+16], LD32(pCurLayer->pMv[LIST_0][iMbXy][8]));
+        case MB_TYPE_8x16:
+          pCtx->pDec->pRefPicPocBuff[(iMbXy<<2)] = pCtx->sRefPic.pRefList[LIST_0][pCurLayer->pRefIndex[LIST_0][iMbXy][0]]->iFramePoc;
+          pCtx->pDec->pRefPicPocBuff[(iMbXy<<2)+1] = pCtx->sRefPic.pRefList[LIST_0][pCurLayer->pRefIndex[LIST_0][iMbXy][4]]->iFramePoc;
+          ST32(&pCtx->pDec->pMVBuff[(iMbXy<<5)], LD32(pCurLayer->pMv[LIST_0][iMbXy][0]));
+          ST32(&pCtx->pDec->pMVBuff[(iMbXy<<5)+8], LD32(pCurLayer->pMv[LIST_0][iMbXy][4]));
+          break;
+        default:
+          break;
+      }
+      //pCtx->pDec->pMbModeBuff [(iMbXy << 2) + 1] = pCurLayer->pMbType[iMbXy]; not nessary to set others
+      //pCtx->pDec->pMbModeBuff [(iMbXy << 2) + 2] = pCurLayer->pMbType[iMbXy]; not nessary to set others
+      //pCtx->pDec->pMbModeBuff [(iMbXy << 2) + 3] = pCurLayer->pMbType[iMbXy]; not nessary to set others
+    }
+  }
+  return ;
+}
+
 int32_t WelsDecodeSlice (PWelsDecoderContext pCtx, bool bFirstSliceInLayer, PNalUnit pNalCur) {
   PDqLayer pCurLayer = pCtx->pCurDqLayer;
   PFmo pFmo = pCtx->pFmo;
@@ -991,6 +1048,8 @@ int32_t WelsDecodeSlice (PWelsDecoderContext pCtx, bool bFirstSliceInLayer, PNal
     if (iRet != ERR_NONE) {
       return iRet;
     }
+
+    StoreMVInfoForEC(pCtx, pCurLayer, iNextMbXyIndex);
 
     ++pSlice->iTotalMbInCurSlice;
     if (uiEosFlag) { //end of slice

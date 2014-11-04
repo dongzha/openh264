@@ -620,6 +620,7 @@ int32_t ParseSliceHeaderSyntaxs (PWelsDecoderContext pCtx, PBitStringAux pBs, co
   pSliceHeadExt->pSubsetSps = pSubsetSps;
 
   bIdrFlag = (!kbExtensionFlag && eNalType == NAL_UNIT_CODED_SLICE_IDR) || (kbExtensionFlag && pNalHeaderExt->bIdrFlag);
+  pSliceHead->bIdrFlag = bIdrFlag;
 
   if (pSps->uiLog2MaxFrameNum == 0) {
     WelsLog (pLogCtx, WELS_LOG_WARNING, "non existing SPS referenced");
@@ -1931,6 +1932,8 @@ int32_t DecodeCurrentAccessUnit (PWelsDecoderContext pCtx, uint8_t** ppDst, SBuf
         pCtx->iErrorCode |= dsOutOfMemory;
         return ERR_INFO_REF_COUNT_OVERFLOW;
       }
+      // for EC: initial mb mode buff for mv copy
+      memset (pCtx->pDec->pMbModeBuff, -1, sizeof(int8_t) * ((pCtx->pDec->iMVHeight4x4 * pCtx->pDec->iMVWidth4x4) >> 2));
     }
 
     if (pCtx->iTotalNumMbRec == 0) { //Picture start to decode
@@ -1961,6 +1964,8 @@ int32_t DecodeCurrentAccessUnit (PWelsDecoderContext pCtx, uint8_t** ppDst, SBuf
       memcpy (&pLayerInfo.sNalHeaderExt, &pNalCur->sNalHeaderExt, sizeof (SNalUnitHeaderExt)); //confirmed_safe_unsafe_usage
 
       pCtx->pDec->iFrameNum = pSh->iFrameNum;
+      pCtx->pDec->iFramePoc = pSh->iPicOrderCntLsb; // still can not obtain correct, because current do not support POCtype 2
+      pCtx->pDec->bIdrFlag = pSh->bIdrFlag;
 
       memcpy (&pLayerInfo.sSliceInLayer.sSliceHeaderExt, pShExt, sizeof (SSliceHeaderExt)); //confirmed_safe_unsafe_usage
       pLayerInfo.sSliceInLayer.bSliceHeaderExtFlag	= pNalCur->sNalData.sVclNal.bSliceHeaderExtFlag;

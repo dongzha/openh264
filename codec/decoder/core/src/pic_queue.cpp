@@ -68,6 +68,7 @@ PPicture AllocPicture (PWelsDecoderContext pCtx, const int32_t kiPicWidth, const
   int32_t iPicChromaHeight	= 0;
   int32_t iLumaSize			= 0;
   int32_t iChromaSize			= 0;
+  int32_t iMVInfoSize = 0;
 
   pPic	= (PPicture) WelsMalloc (sizeof (SPicture), "PPicture");
   WELS_VERIFY_RETURN_IF (NULL, NULL == pPic);
@@ -81,9 +82,17 @@ PPicture AllocPicture (PWelsDecoderContext pCtx, const int32_t kiPicWidth, const
 
   iLumaSize	= iPicWidth * iPicHeight;
   iChromaSize	= iPicChromaWidth * iPicChromaHeight;
+  pPic->iMVWidth4x4 = (WELS_ALIGN (kiPicWidth, 16))>>2;
+  pPic->iMVHeight4x4 = (WELS_ALIGN (kiPicHeight, 16))>>2;
+  iMVInfoSize = pPic->iMVWidth4x4 * pPic->iMVHeight4x4 * 4 // mv buff
+              + ((pPic->iMVWidth4x4 * pPic->iMVHeight4x4)) // refpoc buff
+              + ((pPic->iMVWidth4x4 * pPic->iMVHeight4x4)>>2); // mbmode buff
+
   pPic->pBuffer[0]	= static_cast<uint8_t*> (WelsMalloc (iLumaSize /* luma */
-                      + (iChromaSize << 1) /* Cb,Cr */, "_pic->buffer[0]"));
+                      + (iChromaSize << 1) /* Cb,Cr */
+                      + iMVInfoSize /*ec MV copy info */, "_pic->buffer[0]"));
   memset (pPic->pBuffer[0], 128, (iLumaSize + (iChromaSize << 1)));
+  memset (pPic->pBuffer[0] + (iLumaSize + (iChromaSize << 1)), 0, iMVInfoSize);
 
   WELS_VERIFY_RETURN_PROC_IF (NULL, NULL == pPic->pBuffer[0], FreePicture (pPic));
   pPic->iLinesize[0] = iPicWidth;
@@ -93,6 +102,9 @@ PPicture AllocPicture (PWelsDecoderContext pCtx, const int32_t kiPicWidth, const
   pPic->pData[0]	= pPic->pBuffer[0] + (1 + pPic->iLinesize[0]) * PADDING_LENGTH;
   pPic->pData[1]	= pPic->pBuffer[1] + /*WELS_ALIGN*/ (((1 + pPic->iLinesize[1]) * PADDING_LENGTH) >> 1);
   pPic->pData[2]	= pPic->pBuffer[2] + /*WELS_ALIGN*/ (((1 + pPic->iLinesize[2]) * PADDING_LENGTH) >> 1);
+  pPic->pMVBuff = reinterpret_cast<int16_t*> (pPic->pBuffer[0] + (iLumaSize + (iChromaSize << 1)));
+  pPic->pRefPicPocBuff = reinterpret_cast<int32_t*> (pPic->pBuffer[0] + (iLumaSize + (iChromaSize << 1)) + pPic->iMVWidth4x4 * pPic->iMVHeight4x4 * 4);
+  pPic->pMbModeBuff = reinterpret_cast<int8_t*> (pPic->pBuffer[0] + (iLumaSize + (iChromaSize << 1)) + pPic->iMVWidth4x4 * pPic->iMVHeight4x4 * 5);
 
 
 
