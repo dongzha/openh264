@@ -121,8 +121,10 @@ int32_t WelsInitRefList (PWelsDecoderContext pCtx, int32_t iPoc) {
         pCtx->iErrorCode |= dsDataErrorConcealed;
         bool bCopyPrevious = ((ERROR_CON_FRAME_COPY_CROSS_IDR == pCtx->eErrorConMethod)
                               || (ERROR_CON_SLICE_COPY_CROSS_IDR == pCtx->eErrorConMethod)
-                              || (ERROR_CON_SLICE_COPY_CROSS_IDR_FREEZE_RES_CHANGE == pCtx->eErrorConMethod))
-                             && (NULL != pCtx->pPreviousDecodedPictureInDpb);
+                              || (ERROR_CON_SLICE_COPY_CROSS_IDR_FREEZE_RES_CHANGE == pCtx->eErrorConMethod)
+                              || (ERROR_CON_SLICE_MV_COPY_CROSS_IDR == pCtx->eErrorConMethod)
+                              || (ERROR_CON_SLICE_MV_COPY_CROSS_IDR_FREEZE_RES_CHANGE == pCtx->eErrorConMethod))
+                              && (NULL != pCtx->pPreviousDecodedPictureInDpb);
         bCopyPrevious = bCopyPrevious && (pRef->iWidthInPixel == pCtx->pPreviousDecodedPictureInDpb->iWidthInPixel)
                         && (pRef->iHeightInPixel == pCtx->pPreviousDecodedPictureInDpb->iHeightInPixel);
         if (bCopyPrevious) {
@@ -139,6 +141,7 @@ int32_t WelsInitRefList (PWelsDecoderContext pCtx, int32_t iPoc) {
         pRef->uiTemporalId = pRef->uiQualityId = 0;
         ExpandReferencingPicture (pRef->pData, pRef->iWidthInPixel, pRef->iHeightInPixel, pRef->iLinesize,
                                   pCtx->sExpandPicFunc.pfExpandLumaPicture, pCtx->sExpandPicFunc.pfExpandChromaPicture);
+        pRef->bExpanded = true;
         AddShortTermToList (&pCtx->sRefPic, pRef);
       } else {
         WelsLog (& (pCtx->sLogCtx), WELS_LOG_ERROR, "WelsInitRefList()::PrefetchPic for EC errors.");

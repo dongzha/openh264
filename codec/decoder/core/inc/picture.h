@@ -57,6 +57,7 @@ int8_t* pMbModeBuff; // each 16x16 block uses 8*4 bit
 int32_t iMVWidth4x4;
 int32_t iMVHeight4x4;
 bool bIdrFlag;
+bool bExpanded;
 
 /*******************************from other standard syntax****************************/
 /*from sps*/
