@@ -51,9 +51,9 @@ int32_t		iPlanes;			// How many planes are introduced due to color space format?
 // picture information
 
 /*******************************from EC mv copy****************************/
-int16_t* pMVBuff; // each 4x4 block uses 32 bit
-int32_t* pRefPicPocBuff; // each 8x8 block uses 32 bit
-int8_t* pMbModeBuff; // each 16x16 block uses 8*4 bit
+int16_t* pMVBuff; // each 4x4 block uses 32 bits
+int32_t* pRefPicPocBuff; // each 8x8 block uses 32 bits
+int8_t* pMbModeBuff; // each 16x16 block uses 8*4 bits
 int32_t iMVWidth4x4;
 int32_t iMVHeight4x4;
 bool bIdrFlag;

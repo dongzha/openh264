@@ -50,8 +50,9 @@ void DoErrorConFrameCopy (PWelsDecoderContext pCtx);
 //Do error concealment using slice copy method
 void DoErrorConSliceCopy (PWelsDecoderContext pCtx);
 //Do error concealment using slice MV copy method
-void DoMbECMvCopy (PWelsDecoderContext pCtx, int32_t iMbXy, int32_t iMbX, int32_t iMbY, sMCRefMember* pMCRefMem, int32_t iCurrRefPoc, int32_t iCurrPoc);
+void DoMbECMvCopy (PWelsDecoderContext pCtx, PPicture pDec, PPicture pRef, int32_t iMbXy, int32_t iMbX, int32_t iMbY, sMCRefMember* pMCRefMem, int32_t iCurrRefPoc, int32_t iCurrPoc);
 void DoErrorConSliceMVCopy (PWelsDecoderContext pCtx);
+void DoErrorConIDRMVCopyCrossIDR (PWelsDecoderContext pCtx, PPicture pDec, PPicture pRef);
 //Mark erroneous frame as Ref Pic into DPB
 int32_t MarkECFrameAsRef (PWelsDecoderContext pCtx);
 //Judge if EC is needed to current frame

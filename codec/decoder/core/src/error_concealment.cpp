@@ -161,115 +161,164 @@ void DoErrorConSliceCopy (PWelsDecoderContext pCtx) {
 }
 
 //Do error concealment using slice MV copy method
-void DoMbECMvCopy (PWelsDecoderContext pCtx, int32_t iMbXy, int32_t iMbX, int32_t iMbY, sMCRefMember* pMCRefMem, int32_t iCurrRefPoc, int32_t iCurrPoc) {
-  int8_t iMBmode[4];
+void DoMbECMvCopy (PWelsDecoderContext pCtx, PPicture pDec, PPicture pRef, int32_t iMbXy, int32_t iMbX, int32_t iMbY, sMCRefMember* pMCRefMem, int32_t iCurrRefPoc, int32_t iCurrPoc) {
+  int8_t iMBmode[4] = {-1, -1, -1, -1};
   int16_t iMVs[2];
   int32_t iColRefPoc;
-  int32_t iMbXInPix = iMbX<<2;
-  int32_t iMbYInPix = iMbY<<2;
-  ST32(iMBmode, LD32(pCtx->pDec->pMbModeBuff + (iMbXy << 2)));
+  int32_t iMbXInPix = iMbX<<4;
+  int32_t iMbYInPix = iMbY<<4;
+  uint8_t* pDst[3];
+  pDst[0] = pDec->pData[0]+iMbXInPix+iMbYInPix*pMCRefMem->iDstLineLuma;
+  pDst[1] = pDec->pData[1]+(iMbXInPix>>1)+(iMbYInPix>>1)*pMCRefMem->iDstLineChroma;
+  pDst[2] = pDec->pData[2]+(iMbXInPix>>1)+(iMbYInPix>>1)*pMCRefMem->iDstLineChroma;
 
-  if(IS_INTER(iMBmode[0])) {
+  if(pDec->bIdrFlag == false && IS_INTER(pRef->pMbModeBuff[iMbXy << 2])) {
     // store MV info for next frame EC
-    memcpy(pCtx->pDec->pMVBuff+(iMbXy<<5), pCtx->pPreviousDecodedPictureInDpb->pMVBuff+(iMbXy<<5), sizeof(int16_t)*16*2);
-    memcpy(pCtx->pDec->pRefPicPocBuff+(iMbXy<<2), pCtx->pPreviousDecodedPictureInDpb->pRefPicPocBuff+(iMbXy<<2), sizeof(int32_t)*4);
-    ST32(pCtx->pDec->pMbModeBuff+(iMbXy<<2), LD32(pCtx->pPreviousDecodedPictureInDpb->pMbModeBuff+(iMbXy<<2)));
+    int32_t iScale0;
+    int32_t iScale1;
+    ST32(iMBmode, LD32(pRef->pMbModeBuff + (iMbXy << 2)));
+    //memcpy(pDec->pMVBuff+(iMbXy<<5), pRef->pMVBuff+(iMbXy<<5), sizeof(int16_t)*16*2);
+    memcpy(pDec->pRefPicPocBuff+(iMbXy<<2), pRef->pRefPicPocBuff+(iMbXy<<2), sizeof(int32_t)*4);
+    ST32(pDec->pMbModeBuff+(iMbXy<<2), LD32(iMBmode));
     // do mc with pCtx->pPreviousDecodedPictureInDpb as reference
     if(iMBmode[0] == SUB_MB_TYPE_8x8 || iMBmode[0] == SUB_MB_TYPE_8x4 || iMBmode[0] == SUB_MB_TYPE_4x8 || iMBmode[0] == SUB_MB_TYPE_4x4) {
       for(int32_t i = 0; i < 4; i++) {
-        iColRefPoc = pCtx->pDec->pRefPicPocBuff[(iMbXy<<2)+i];
-        int32_t iScale = ((iCurrRefPoc-iColRefPoc) == 0)? 1 : ((iCurrPoc-iCurrRefPoc)/(iCurrRefPoc-iColRefPoc));
+        iColRefPoc = pDec->pRefPicPocBuff[(iMbXy<<2)+i];
+        iScale0 = ((iCurrRefPoc-iColRefPoc) == 0)? 1 : (iCurrPoc-iCurrRefPoc);
+        iScale1 = ((iCurrRefPoc-iColRefPoc) == 0)? 1 : (iCurrRefPoc-iColRefPoc);
+        pMCRefMem->pDstY = pDst[0]+(i%2)*8+(i*4)*pMCRefMem->iDstLineLuma;
+        pMCRefMem->pDstU = pDst[1]+(i%2)*4+(i*2)*pMCRefMem->iDstLineChroma;
+        pMCRefMem->pDstV = pDst[2]+(i%2)*4+(i*2)*pMCRefMem->iDstLineChroma;
         switch (iMBmode[i]) {
           case SUB_MB_TYPE_8x8:
-            iMVs[0] = pCtx->pDec->pMVBuff[(iMbXy<<5)+(i<<3)] * iScale;
-            iMVs[1] = pCtx->pDec->pMVBuff[(iMbXy<<5)+(i<<3) + 1] * iScale;
+            iMVs[0] = pRef->pMVBuff[(iMbXy<<5)+(i<<3)] * iScale0 / iScale1;
+            iMVs[1] = pRef->pMVBuff[(iMbXy<<5)+(i<<3) + 1] * iScale0 / iScale1;
             BaseMC (pMCRefMem, iMbXInPix+(i%2)*8, iMbYInPix+(i*4), &pCtx->sMcFunc, 8, 8, iMVs);
+            ST32(pDec->pMVBuff + (iMbXy<<5) + (i<<3), LD32(iMVs));
             break;
           case SUB_MB_TYPE_8x4:
-            iMVs[0] = pCtx->pDec->pMVBuff[(iMbXy<<5)+(i<<3)] * iScale;
-            iMVs[1] = pCtx->pDec->pMVBuff[(iMbXy<<5)+(i<<3) + 1] * iScale;
+            iMVs[0] = pRef->pMVBuff[(iMbXy<<5)+(i<<3)] * iScale0 / iScale1;
+            iMVs[1] = pRef->pMVBuff[(iMbXy<<5)+(i<<3) + 1] * iScale0 / iScale1;
             BaseMC (pMCRefMem, iMbXInPix+(i%2)*8, iMbYInPix+(i*4), &pCtx->sMcFunc, 8, 4, iMVs);
-            iMVs[0] = pCtx->pDec->pMVBuff[(iMbXy<<5)+(i<<3) + 4] * iScale;
-            iMVs[1] = pCtx->pDec->pMVBuff[(iMbXy<<5)+(i<<3) + 5] * iScale;
+            ST32(pDec->pMVBuff + (iMbXy<<5) + (i<<3), LD32(iMVs));
+            iMVs[0] = pRef->pMVBuff[(iMbXy<<5)+(i<<3) + 4] * iScale0 / iScale1;
+            iMVs[1] = pRef->pMVBuff[(iMbXy<<5)+(i<<3) + 5] * iScale0 / iScale1;
+            pMCRefMem->pDstY += (pMCRefMem->iDstLineLuma<<2);
+            pMCRefMem->pDstU += (pMCRefMem->iDstLineChroma<<1);
+            pMCRefMem->pDstV += (pMCRefMem->iDstLineChroma<<1);
             BaseMC (pMCRefMem, iMbXInPix+(i%2)*8, iMbYInPix+(i*4) + 4, &pCtx->sMcFunc, 8, 4, iMVs);
+            ST32(pDec->pMVBuff + (iMbXy<<5) + (i<<3) + 4, LD32(iMVs));
           case SUB_MB_TYPE_4x8:
-            iMVs[0] = pCtx->pDec->pMVBuff[(iMbXy<<5)+(i<<3)] * iScale;
-            iMVs[1] = pCtx->pDec->pMVBuff[(iMbXy<<5)+(i<<3) + 1] * iScale;
+            iMVs[0] = pRef->pMVBuff[(iMbXy<<5)+(i<<3)] * iScale0 / iScale1;
+            iMVs[1] = pRef->pMVBuff[(iMbXy<<5)+(i<<3) + 1] * iScale0 / iScale1;
             BaseMC (pMCRefMem, iMbXInPix+(i%2)*8, iMbYInPix+(i*4), &pCtx->sMcFunc, 4, 8, iMVs);
-            iMVs[0] = pCtx->pDec->pMVBuff[(iMbXy<<5)+(i<<3) + 2] * iScale;
-            iMVs[1] = pCtx->pDec->pMVBuff[(iMbXy<<5)+(i<<3) + 3] * iScale;
+            ST32(pDec->pMVBuff + (iMbXy<<5) + (i<<3), LD32(iMVs));
+            iMVs[0] = pRef->pMVBuff[(iMbXy<<5)+(i<<3) + 2] * iScale0 / iScale1;
+            iMVs[1] = pRef->pMVBuff[(iMbXy<<5)+(i<<3) + 3] * iScale0 / iScale1;
+            pMCRefMem->pDstY += 4;
+            pMCRefMem->pDstU += 2;
+            pMCRefMem->pDstV += 2;
             BaseMC (pMCRefMem, iMbXInPix+(i%2)*8+4, iMbYInPix+(i*4), &pCtx->sMcFunc, 4, 8, iMVs);
+            ST32(pDec->pMVBuff + (iMbXy<<5) + (i<<3) + 2, LD32(iMVs));
             break;
           case SUB_MB_TYPE_4x4:
-            iMVs[0] = pCtx->pDec->pMVBuff[(iMbXy<<5)+(i<<3)] * iScale;
-            iMVs[1] = pCtx->pDec->pMVBuff[(iMbXy<<5)+(i<<3) + 1] * iScale;
+            iMVs[0] = pRef->pMVBuff[(iMbXy<<5)+(i<<3)] * iScale0 / iScale1;
+            iMVs[1] = pRef->pMVBuff[(iMbXy<<5)+(i<<3) + 1] * iScale0 / iScale1;
             BaseMC (pMCRefMem, iMbXInPix+(i%2)*8, iMbYInPix+(i*4), &pCtx->sMcFunc, 4, 4, iMVs);
-            iMVs[0] = pCtx->pDec->pMVBuff[(iMbXy<<5)+(i<<3) + 2] * iScale;
-            iMVs[1] = pCtx->pDec->pMVBuff[(iMbXy<<5)+(i<<3) + 3] * iScale;
+            ST32(pDec->pMVBuff + (iMbXy<<5) + (i<<3), LD32(iMVs));
+            iMVs[0] = pRef->pMVBuff[(iMbXy<<5)+(i<<3) + 2]  * iScale0 / iScale1;
+            iMVs[1] = pRef->pMVBuff[(iMbXy<<5)+(i<<3) + 3] * iScale0 / iScale1;
+            pMCRefMem->pDstY += 4;
+            pMCRefMem->pDstU += 2;
+            pMCRefMem->pDstV += 2;
             BaseMC (pMCRefMem, iMbXInPix+(i%2)*8+4, iMbYInPix+(i*4), &pCtx->sMcFunc, 4, 4, iMVs);
-            iMVs[0] = pCtx->pDec->pMVBuff[(iMbXy<<5)+(i<<3)+ 4] * iScale;
-            iMVs[1] = pCtx->pDec->pMVBuff[(iMbXy<<5)+(i<<3) + 5] * iScale;
+            ST32(pDec->pMVBuff + (iMbXy<<5) + (i<<3) + 2, LD32(iMVs));
+            iMVs[0] = pRef->pMVBuff[(iMbXy<<5)+(i<<3)+ 4] * iScale0 / iScale1;
+            iMVs[1] = pRef->pMVBuff[(iMbXy<<5)+(i<<3) + 5] * iScale0 / iScale1;
+            pMCRefMem->pDstY += ((pMCRefMem->iDstLineLuma<<2)-4);
+            pMCRefMem->pDstU += ((pMCRefMem->iDstLineChroma<<1)-2);
+            pMCRefMem->pDstV += ((pMCRefMem->iDstLineChroma<<1)-2);
             BaseMC (pMCRefMem, iMbXInPix+(i%2)*8, iMbYInPix+(i*4)+4, &pCtx->sMcFunc, 4, 4, iMVs);
-            iMVs[0] = pCtx->pDec->pMVBuff[(iMbXy<<5)+(i<<3) + 6] * iScale;
-            iMVs[1] = pCtx->pDec->pMVBuff[(iMbXy<<5)+(i<<3) + 7] * iScale;
+            ST32(pDec->pMVBuff + (iMbXy<<5) + (i<<3) + 4, LD32(iMVs));
+            iMVs[0] = pRef->pMVBuff[(iMbXy<<5)+(i<<3) + 6] * iScale0 / iScale1;
+            iMVs[1] = pRef->pMVBuff[(iMbXy<<5)+(i<<3) + 7] * iScale0 / iScale1;
+            pMCRefMem->pDstY += 4;
+            pMCRefMem->pDstU += 2;
+            pMCRefMem->pDstV += 2;
             BaseMC (pMCRefMem, iMbXInPix+(i%2)*8+4, iMbYInPix+(i*4)+4, &pCtx->sMcFunc, 4, 4, iMVs);
+            ST32(pDec->pMVBuff + (iMbXy<<5) + (i<<3) + 6, LD32(iMVs));
             break;
           default:
             break;
         }
       }
     } else {
-      int32_t iScale;
+      pMCRefMem->pDstY = pDst[0];
+      pMCRefMem->pDstU = pDst[1];
+      pMCRefMem->pDstV = pDst[2];
       switch (iMBmode[0]) {
         case MB_TYPE_16x16:
         case MB_TYPE_SKIP:
-            iColRefPoc = pCtx->pDec->pRefPicPocBuff[(iMbXy<<2)];
-            iScale = ((iCurrRefPoc-iColRefPoc) == 0)? 1 : ((iCurrPoc-iCurrRefPoc)/(iCurrRefPoc-iColRefPoc));
-            iMVs[0] = pCtx->pDec->pMVBuff[(iMbXy<<5)] * iScale;
-            iMVs[1] = pCtx->pDec->pMVBuff[(iMbXy<<5) + 1] * iScale;
+            iColRefPoc = pDec->pRefPicPocBuff[(iMbXy<<2)];
+            iScale0 = ((iCurrRefPoc-iColRefPoc) == 0)? 1 : (iCurrPoc-iCurrRefPoc);
+            iScale1 = ((iCurrRefPoc-iColRefPoc) == 0)? 1 : (iCurrRefPoc-iColRefPoc);
+            iMVs[0] = pRef->pMVBuff[(iMbXy<<5)] * iScale0 / iScale1;
+            iMVs[1] = pRef->pMVBuff[(iMbXy<<5) + 1] * iScale0 / iScale1;
             BaseMC (pMCRefMem, iMbXInPix, iMbYInPix, &pCtx->sMcFunc, 16, 16, iMVs);
+            ST32(pDec->pMVBuff + (iMbXy<<5), LD32(iMVs));
           break;
         case MB_TYPE_16x8:
-            iColRefPoc = pCtx->pDec->pRefPicPocBuff[(iMbXy<<2)];
-            iScale = ((iCurrRefPoc-iColRefPoc) == 0)? 1 : ((iCurrPoc-iCurrRefPoc)/(iCurrRefPoc-iColRefPoc));
-            iMVs[0] = pCtx->pDec->pMVBuff[(iMbXy<<5)] * iScale;
-            iMVs[1] = pCtx->pDec->pMVBuff[(iMbXy<<5) + 1] * iScale;
+            iColRefPoc = pDec->pRefPicPocBuff[(iMbXy<<2)];
+            iScale0 = ((iCurrRefPoc-iColRefPoc) == 0)? 1 : (iCurrPoc-iCurrRefPoc);
+            iScale1 = ((iCurrRefPoc-iColRefPoc) == 0)? 1 : (iCurrRefPoc-iColRefPoc);
+            iMVs[0] = pRef->pMVBuff[(iMbXy<<5)] * iScale0 / iScale1;
+            iMVs[1] = pRef->pMVBuff[(iMbXy<<5) + 1] * iScale0 / iScale1;
             BaseMC (pMCRefMem, iMbXInPix, iMbYInPix, &pCtx->sMcFunc, 16, 8, iMVs);
-            iColRefPoc = pCtx->pDec->pRefPicPocBuff[(iMbXy<<2)+2];
-            iScale = ((iCurrRefPoc-iColRefPoc) == 0)? 1 : ((iCurrPoc-iCurrRefPoc)/(iCurrRefPoc-iColRefPoc));
-            iMVs[0] = pCtx->pDec->pMVBuff[(iMbXy<<5) + 16] * iScale;
-            iMVs[1] = pCtx->pDec->pMVBuff[(iMbXy<<5) + 17] * iScale;
+            ST32(pDec->pMVBuff + (iMbXy<<5), LD32(iMVs));
+            iColRefPoc = pDec->pRefPicPocBuff[(iMbXy<<2)+2];
+            iScale0 = ((iCurrRefPoc-iColRefPoc) == 0)? 1 : ((iCurrPoc-iCurrRefPoc)/(iCurrRefPoc-iColRefPoc));
+            iMVs[0] = pRef->pMVBuff[(iMbXy<<5) + 16] * iScale0 / iScale1;
+            iMVs[1] = pRef->pMVBuff[(iMbXy<<5) + 17] * iScale0 / iScale1;
+            pMCRefMem->pDstY += (pMCRefMem->iDstLineLuma<<3);
+            pMCRefMem->pDstU += (pMCRefMem->iDstLineChroma<<2);
+            pMCRefMem->pDstV += (pMCRefMem->iDstLineChroma<<2);
             BaseMC (pMCRefMem, iMbXInPix, iMbYInPix+8, &pCtx->sMcFunc, 16, 8, iMVs);
+            ST32(pDec->pMVBuff + (iMbXy<<5) +16, LD32(iMVs));
         case MB_TYPE_8x16:
-            iColRefPoc = pCtx->pDec->pRefPicPocBuff[(iMbXy<<2)];
-            iScale = ((iCurrRefPoc-iColRefPoc) == 0)? 1 : ((iCurrPoc-iCurrRefPoc)/(iCurrRefPoc-iColRefPoc));
-            iMVs[0] = pCtx->pDec->pMVBuff[(iMbXy<<5)] * iScale;
-            iMVs[1] = pCtx->pDec->pMVBuff[(iMbXy<<5) + 1] * iScale;
+            iColRefPoc = pDec->pRefPicPocBuff[(iMbXy<<2)];
+            iScale0 = ((iCurrRefPoc-iColRefPoc) == 0)? 1 : (iCurrPoc-iCurrRefPoc);
+            iScale1 = ((iCurrRefPoc-iColRefPoc) == 0)? 1 : (iCurrRefPoc-iColRefPoc);
+            iMVs[0] = pRef->pMVBuff[(iMbXy<<5)] * iScale0 / iScale1;
+            iMVs[1] = pRef->pMVBuff[(iMbXy<<5) + 1] * iScale0 / iScale1;
             BaseMC (pMCRefMem, iMbXInPix, iMbYInPix, &pCtx->sMcFunc, 8, 16, iMVs);
-            iColRefPoc = pCtx->pDec->pRefPicPocBuff[(iMbXy<<2)+1];
-            iScale = ((iCurrRefPoc-iColRefPoc) == 0)? 1 : ((iCurrPoc-iCurrRefPoc)/(iCurrRefPoc-iColRefPoc));
-            iMVs[0] = pCtx->pDec->pMVBuff[(iMbXy<<5) + 8] * iScale;
-            iMVs[1] = pCtx->pDec->pMVBuff[(iMbXy<<5) + 9] * iScale;
+            ST32(pDec->pMVBuff + (iMbXy<<5), LD32(iMVs));
+            iColRefPoc = pDec->pRefPicPocBuff[(iMbXy<<2)+1];
+            iScale0 = ((iCurrRefPoc-iColRefPoc) == 0)? 1 : (iCurrPoc-iCurrRefPoc);
+            iScale1 = ((iCurrRefPoc-iColRefPoc) == 0)? 1 : (iCurrRefPoc-iColRefPoc);
+            iMVs[0] = pRef->pMVBuff[(iMbXy<<5) + 8] * iScale0 / iScale1;
+            iMVs[1] = pRef->pMVBuff[(iMbXy<<5) + 9] * iScale0 / iScale1;
+            pMCRefMem->pDstY += 8;
+            pMCRefMem->pDstU += 4;
+            pMCRefMem->pDstV += 4;
             BaseMC (pMCRefMem, iMbXInPix+8, iMbYInPix, &pCtx->sMcFunc, 8, 16, iMVs);
+            ST32(pDec->pMVBuff + (iMbXy<<5) + 8, LD32(iMVs));
           break;
         default:
           break;
       }
     }
   } else {
-    uint8_t* pSrcData, *pDstData;
+    uint8_t* pSrcData;
+    ST32(pDec->pMbModeBuff+(iMbXy<<2), LD32(iMBmode));
     //Y component
-    pDstData = pMCRefMem->pDstY + iMbY * 16 * pMCRefMem->iDstLineLuma + iMbX * 16;;
     pSrcData = pMCRefMem->pSrcY + iMbY * 16 * pMCRefMem->iSrcLineLuma + iMbX * 16;
-    pCtx->sCopyFunc.pCopyLumaFunc (pDstData, pMCRefMem->iDstLineLuma, pSrcData, pMCRefMem->iSrcLineLuma);
+    pCtx->sCopyFunc.pCopyLumaFunc (pDst[0], pMCRefMem->iDstLineLuma, pSrcData, pMCRefMem->iSrcLineLuma);
     //U component
-    pDstData = pMCRefMem->pDstU + iMbY * 8 * pMCRefMem->iDstLineChroma + iMbX * 8;
     pSrcData = pMCRefMem->pSrcU + iMbY * 8 * pMCRefMem->iSrcLineChroma + iMbX * 8;
-    pCtx->sCopyFunc.pCopyChromaFunc (pDstData, pMCRefMem->iDstLineChroma, pSrcData, pMCRefMem->iSrcLineChroma);
+    pCtx->sCopyFunc.pCopyChromaFunc (pDst[1], pMCRefMem->iDstLineChroma, pSrcData, pMCRefMem->iSrcLineChroma);
     //V component
-    pDstData = pMCRefMem->pDstV + iMbY * 8 * pMCRefMem->iDstLineChroma + iMbX * 8;
     pSrcData = pMCRefMem->pSrcV + iMbY * 8 * pMCRefMem->iSrcLineChroma + iMbX * 8;
-    pCtx->sCopyFunc.pCopyChromaFunc (pDstData, pMCRefMem->iDstLineChroma, pSrcData, pMCRefMem->iSrcLineChroma);
+    pCtx->sCopyFunc.pCopyChromaFunc (pDst[2], pMCRefMem->iDstLineChroma, pSrcData, pMCRefMem->iSrcLineChroma);
   }
   return ;
 }
@@ -297,9 +346,7 @@ void DoErrorConSliceMVCopy (PWelsDecoderContext pCtx) {
     sMCRefMem.pSrcV = pSrcPic->pData[2];
     sMCRefMem.iDstLineLuma   = pDstPic->iLinesize[0];
     sMCRefMem.iDstLineChroma = pDstPic->iLinesize[1];
-    sMCRefMem.pDstY = pDstPic->pData[0];
-    sMCRefMem.pDstU = pDstPic->pData[1];
-    sMCRefMem.pDstV = pDstPic->pData[2];
+
     sMCRefMem.iPicWidth = pDstPic->iWidthInPixel;
     sMCRefMem.iPicHeight = pDstPic->iHeightInPixel;
     iCurrRefPoc = pSrcPic->iFramePoc;
@@ -318,7 +365,7 @@ void DoErrorConSliceMVCopy (PWelsDecoderContext pCtx) {
       if (!pMbCorrectlyDecodedFlag[iMbXyIndex]) {
         iMbEcedNum++;
         if (pSrcPic != NULL) {
-          DoMbECMvCopy (pCtx, iMbXyIndex, iMbX, iMbY, &sMCRefMem, iCurrRefPoc, iCurrPoc);
+          DoMbECMvCopy (pCtx, pDstPic, pSrcPic, iMbXyIndex, iMbX, iMbY, &sMCRefMem, iCurrRefPoc, iCurrPoc);
         } else { //pSrcPic == NULL
           //Y component
           pDstData = pDstPic->pData[0] + iMbY * 16 * iDstStride + iMbX * 16;
@@ -345,6 +392,87 @@ void DoErrorConSliceMVCopy (PWelsDecoderContext pCtx) {
 
   pCtx->sDecoderStatistics.uiAvgEcRatio = (pCtx->sDecoderStatistics.uiAvgEcRatio * pCtx->sDecoderStatistics.uiEcFrameNum)
                                           + ((iMbEcedNum * 100) / iMbNum) ;
+}
+
+void DoErrorConIDRMVCopyCrossIDR (PWelsDecoderContext pCtx, PPicture pDec, PPicture pRef) {
+  PPicture pDstPic = pDec;
+  PPicture pSrcPic = pRef;
+  if(pSrcPic != NULL) {
+    // for EC: initial mb mode buff for mv copy
+    pDstPic->bExpanded = false;
+    memset (pDstPic->pMbModeBuff, -1, sizeof(int8_t) * ((pDstPic->iMVHeight4x4 * pDstPic->iMVWidth4x4) >> 2));
+    memcpy (pDstPic->pData[0], pSrcPic->pData[0], pDstPic->iLinesize[0] * pDstPic->iHeightInPixel);
+    memcpy (pDstPic->pData[1], pSrcPic->pData[1], pDstPic->iLinesize[1] * pDstPic->iHeightInPixel / 2);
+    memcpy (pDstPic->pData[2], pSrcPic->pData[2], pDstPic->iLinesize[2] * pDstPic->iHeightInPixel / 2);
+    return;
+  }
+
+  if(pSrcPic != NULL && pSrcPic->bIdrFlag ) {
+    // for EC: initial mb mode buff for mv copy
+    pDstPic->bExpanded = false;
+    memset (pDstPic->pMbModeBuff, -1, sizeof(int8_t) * ((pDstPic->iMVHeight4x4 * pDstPic->iMVWidth4x4) >> 2));
+    memcpy (pDstPic->pData[0], pSrcPic->pData[0], pDstPic->iLinesize[0] * pDstPic->iHeightInPixel);
+    memcpy (pDstPic->pData[1], pSrcPic->pData[1], pDstPic->iLinesize[1] * pDstPic->iHeightInPixel / 2);
+    memcpy (pDstPic->pData[2], pSrcPic->pData[2], pDstPic->iLinesize[2] * pDstPic->iHeightInPixel / 2);
+    return;
+  }
+
+  int32_t iMbWidth = (int32_t) pCtx->pSps->iMbWidth;
+  int32_t iMbHeight = (int32_t) pCtx->pSps->iMbHeight;
+  int32_t iMbNum = pCtx->pSps->iMbWidth * pCtx->pSps->iMbHeight;
+  int32_t iMbXyIndex;
+  uint8_t *pDstData;
+  uint32_t iDstStride = pDstPic->iLinesize[0];
+  sMCRefMember sMCRefMem;
+  int32_t iCurrRefPoc;
+  int32_t iCurrPoc;
+  if (pSrcPic != NULL) {
+    sMCRefMem.iSrcLineLuma   = pSrcPic->iLinesize[0];
+    sMCRefMem.iSrcLineChroma = pSrcPic->iLinesize[1];
+    sMCRefMem.pSrcY = pSrcPic->pData[0];
+    sMCRefMem.pSrcU = pSrcPic->pData[1];
+    sMCRefMem.pSrcV = pSrcPic->pData[2];
+    sMCRefMem.iDstLineLuma   = pDstPic->iLinesize[0];
+    sMCRefMem.iDstLineChroma = pDstPic->iLinesize[1];
+    sMCRefMem.iPicWidth = pDstPic->iWidthInPixel;
+    sMCRefMem.iPicHeight = pDstPic->iHeightInPixel;
+    iCurrRefPoc = pSrcPic->iFramePoc;
+    iCurrPoc = pDstPic->iFramePoc;
+    if(!pSrcPic->bExpanded) {
+      ExpandReferencingPicture (pSrcPic->pData, pSrcPic->iWidthInPixel, pSrcPic->iHeightInPixel,
+                            pSrcPic->iLinesize,
+                            pCtx->sExpandPicFunc.pfExpandLumaPicture, pCtx->sExpandPicFunc.pfExpandChromaPicture);
+      pSrcPic->bExpanded = true;
+    }
+  }
+
+  for (int32_t iMbY = 0; iMbY < iMbHeight; ++iMbY) {
+    for (int32_t iMbX = 0; iMbX < iMbWidth; ++iMbX) {
+      iMbXyIndex = iMbY * iMbWidth + iMbX;
+      if (pSrcPic != NULL) {
+        DoMbECMvCopy (pCtx, pDec, pRef, iMbXyIndex, iMbX, iMbY, &sMCRefMem, iCurrRefPoc, iCurrPoc);
+      } else { //pSrcPic == NULL
+        //Y component
+        pDstData = pDstPic->pData[0] + iMbY * 16 * iDstStride + iMbX * 16;
+        for (int32_t i = 0; i < 16; ++i) {
+          memset (pDstData, 128, 16);
+          pDstData += iDstStride;
+      }
+        //U component
+        pDstData = pDstPic->pData[1] + iMbY * 8 * iDstStride / 2 + iMbX * 8;
+        for (int32_t i = 0; i < 8; ++i) {
+          memset (pDstData, 128, 8);
+          pDstData += iDstStride / 2;
+        }
+        //V component
+        pDstData = pDstPic->pData[2] + iMbY * 8 * iDstStride / 2 + iMbX * 8;
+        for (int32_t i = 0; i < 8; ++i) {
+          memset (pDstData, 128, 8);
+          pDstData += iDstStride / 2;
+        }
+      } //
+    } //iMbX
+  } //iMbY
 }
 
 //Mark erroneous frame as Ref Pic into DPB
