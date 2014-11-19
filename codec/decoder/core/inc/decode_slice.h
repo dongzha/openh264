@@ -52,7 +52,6 @@ int32_t WelsDecodeMbCabacPSliceBaseMode0(PWelsDecoderContext pCtx, PWelsNeighAva
 int32_t WelsTargetSliceConstruction (PWelsDecoderContext pCtx); //construction based on slice
 
 int32_t WelsDecodeSlice (PWelsDecoderContext pCtx, bool bFirstSliceInLayer, PNalUnit pNalCur);
-  void StoreMVInfoForEC (PWelsDecoderContext pCtx, PDqLayer pCurLayer, int32_t iMbXy);
 
 int32_t WelsTargetMbConstruction (PWelsDecoderContext pCtx);
 

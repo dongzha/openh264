@@ -185,7 +185,7 @@ static inline void GetRefPic (sMCRefMember* pMCRefMem, PWelsDecoderContext pCtx,
 #ifndef MC_FLOW_SIMPLE_JUDGE
 #define MC_FLOW_SIMPLE_JUDGE 1
 #endif //MC_FLOW_SIMPLE_JUDGE
-inline void BaseMC (sMCRefMember* pMCRefMem, int32_t iXOffset, int32_t iYOffset, SMcFunc* pMCFunc,
+void BaseMC (sMCRefMember* pMCRefMem, int32_t iXOffset, int32_t iYOffset, SMcFunc* pMCFunc,
                            int32_t iBlkWidth, int32_t iBlkHeight, int16_t iMVs[2]) {
   int32_t iFullMVx = (iXOffset << 2) + iMVs[0]; //quarter pixel
   int32_t iFullMVy = (iYOffset << 2) + iMVs[1];

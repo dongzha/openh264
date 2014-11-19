@@ -67,7 +67,7 @@ typedef struct TagMCRefMember {
   int32_t iPicHeight;
 } sMCRefMember;
 
-inline void BaseMC (sMCRefMember* pMCRefMem, int32_t iXOffset, int32_t iYOffset, SMcFunc* pMCFunc,
+void BaseMC (sMCRefMember* pMCRefMem, int32_t iXOffset, int32_t iYOffset, SMcFunc* pMCFunc,
                            int32_t iBlkWidth, int32_t iBlkHeight, int16_t iMVs[2]);
 
 void WelsFillRecNeededMbInfo (PWelsDecoderContext pCtx, bool bOutput, PDqLayer pCurLayer);

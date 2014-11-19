@@ -128,26 +128,21 @@ int32_t WelsInitRefList (PWelsDecoderContext pCtx, int32_t iPoc) {
                               && (NULL != pCtx->pPreviousDecodedPictureInDpb);
         bCopyPrevious = bCopyPrevious && (pRef->iWidthInPixel == pCtx->pPreviousDecodedPictureInDpb->iWidthInPixel)
                         && (pRef->iHeightInPixel == pCtx->pPreviousDecodedPictureInDpb->iHeightInPixel);
-        pRef->iFrameNum = 0;
-        pRef->iFramePoc = 0;
-        pRef->uiTemporalId = pRef->uiQualityId = 0;
+
         if (bCopyPrevious) {
-          if ((ERROR_CON_SLICE_MV_COPY_CROSS_IDR == pCtx->eErrorConMethod)) {
-            DoErrorConIDRMVCopyCrossIDR (pCtx, pRef, pCtx->pPreviousDecodedPictureInDpb);
-          } else {
-            memcpy (pRef->pData[0], pCtx->pPreviousDecodedPictureInDpb->pData[0], pRef->iLinesize[0] * pRef->iHeightInPixel);
-            memcpy (pRef->pData[1], pCtx->pPreviousDecodedPictureInDpb->pData[1], pRef->iLinesize[1] * pRef->iHeightInPixel / 2);
-            memcpy (pRef->pData[2], pCtx->pPreviousDecodedPictureInDpb->pData[2], pRef->iLinesize[2] * pRef->iHeightInPixel / 2);
-          }
+          memcpy (pRef->pData[0], pCtx->pPreviousDecodedPictureInDpb->pData[0], pRef->iLinesize[0] * pRef->iHeightInPixel);
+          memcpy (pRef->pData[1], pCtx->pPreviousDecodedPictureInDpb->pData[1], pRef->iLinesize[1] * pRef->iHeightInPixel / 2);
+          memcpy (pRef->pData[2], pCtx->pPreviousDecodedPictureInDpb->pData[2], pRef->iLinesize[2] * pRef->iHeightInPixel / 2);
         } else {
           memset (pRef->pData[0], 128, pRef->iLinesize[0] * pRef->iHeightInPixel);
           memset (pRef->pData[1], 128, pRef->iLinesize[1] * pRef->iHeightInPixel / 2);
           memset (pRef->pData[2], 128, pRef->iLinesize[2] * pRef->iHeightInPixel / 2);
         }
-
+        pRef->iFrameNum = 0;
+        pRef->iFramePoc = 0;
+        pRef->uiTemporalId = pRef->uiQualityId = 0;
         ExpandReferencingPicture (pRef->pData, pRef->iWidthInPixel, pRef->iHeightInPixel, pRef->iLinesize,
                                   pCtx->sExpandPicFunc.pfExpandLumaPicture, pCtx->sExpandPicFunc.pfExpandChromaPicture);
-        pRef->bExpanded = true;
         AddShortTermToList (&pCtx->sRefPic, pRef);
       } else {
         WelsLog (& (pCtx->sLogCtx), WELS_LOG_ERROR, "WelsInitRefList()::PrefetchPic for EC errors.");
