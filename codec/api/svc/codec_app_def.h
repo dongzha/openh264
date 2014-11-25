@@ -575,6 +575,8 @@ typedef struct TagParserBsInfo {
   unsigned char* pDstBuff;                     ///< outputted dst buffer for parsed bitstream
   int iSpsWidthInPixel;                        ///< required SPS width info
   int iSpsHeightInPixel;                       ///< required SPS height info
+  unsigned long long uiInBsTimeStamp;               ///< input BS timestamp
+  unsigned long long uiOutBsTimeStamp;             ///< output BS timestamp
 } SParserBsInfo, *PParserBsInfo;
 
 /**
