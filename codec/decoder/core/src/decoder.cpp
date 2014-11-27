@@ -163,7 +163,7 @@ void WelsDecoderDefaults (PWelsDecoderContext pCtx, SLogContext* pLogCtx) {
   pCtx->pPicBuff[LIST_1]		= NULL;
 
   pCtx->bAvcBasedFlag			= true;
-  pCtx->eErrorConMethod = ERROR_CON_SLICE_COPY_CROSS_IDR_FREEZE_RES_CHANGE;
+  pCtx->eErrorConMethod = ERROR_CON_SLICE_MV_COPY_CROSS_IDR_FREEZE_RES_CHANGE;
   pCtx->pPreviousDecodedPictureInDpb = NULL;
 
 }
@@ -178,10 +178,11 @@ void WelsDecoderDefaults (PWelsDecoderContext pCtx, SLogContext* pLogCtx) {
  */
 static inline int32_t GetTargetRefListSize (PWelsDecoderContext pCtx) {
   int32_t iNumRefFrames	= 0;
+  // +2 for EC MV Copy buffer exchange
   if ((pCtx == NULL) || (pCtx->pSps == NULL)) {
-    iNumRefFrames = MAX_REF_PIC_COUNT;
+    iNumRefFrames = MAX_REF_PIC_COUNT + 2;
   } else {
-    iNumRefFrames = pCtx->pSps->iNumRefFrames + 1;
+    iNumRefFrames = pCtx->pSps->iNumRefFrames + 2;
   }
 
 #ifdef LONG_TERM_REF

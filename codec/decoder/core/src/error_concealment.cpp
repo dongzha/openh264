@@ -164,6 +164,9 @@ void DoErrorConSliceCopy (PWelsDecoderContext pCtx) {
 //Do error concealment using slice MV copy method
 void DoMbECMvCopy (PWelsDecoderContext pCtx, PPicture pDec, PPicture pRef, int32_t iMbXy, int32_t iMbX, int32_t iMbY,
                    sMCRefMember* pMCRefMem) {
+  if (pDec == pRef) {
+    return; // for protection, should never go into this logic.
+  }
   int16_t iMVs[2];
   int32_t iMbXInPix = iMbX << 4;
   int32_t iMbYInPix = iMbY << 4;
