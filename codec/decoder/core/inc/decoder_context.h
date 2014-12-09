@@ -402,6 +402,7 @@ PWelsCabacDecEngine   pCabacDecEngine;
 double dDecTime;
 SDecoderStatistics sDecoderStatistics;// For real time debugging
 int32_t iMbEcedNum;
+int32_t iMbEcedPropNum;
 int32_t iMbNum;
 bool bMbRefConcealed;
 int32_t iECMVs[16][2];

@@ -101,7 +101,7 @@ int32_t WelsTargetSliceConstruction (PWelsDecoderContext pCtx) {
     ++iCountNumMb;
     if (!pCurLayer->pMbCorrectlyDecodedFlag[iNextMbXyIndex]) { //already con-ed, overwrite
       pCurLayer->pMbCorrectlyDecodedFlag[iNextMbXyIndex] = true;
-      pCtx->pDec->iMbEcedNum += (pCurLayer->pMbRefConcealedFlag[iNextMbXyIndex]? 1 : 0);
+      pCtx->pDec->iMbEcedPropNum += (pCurLayer->pMbRefConcealedFlag[iNextMbXyIndex]? 1 : 0);
       ++pCtx->iTotalNumMbRec;
     }
 
