@@ -126,7 +126,7 @@ typedef struct TagWelsEncCtx {
   pMvUnitBlock4x4;	// (*pMvUnitBlock4x4[2])[MB_BLOCK4x4_NUM];	    // for store each 4x4 blocks' mv unit, the two swap after different d layer
   int8_t*
   pRefIndexBlock4x4;	// (*pRefIndexBlock4x4[2])[MB_BLOCK8x8_NUM];	    // for store each 4x4 blocks' pRef index, the two swap after different d layer
-  int8_t*                      pNonZeroCountBlocks;	// (*pNonZeroCountBlocks)[MB_LUMA_CHROMA_BLOCK4x4_NUM];
+  uint8_t*                      pNonZeroCountBlocks;	// (*pNonZeroCountBlocks)[MB_LUMA_CHROMA_BLOCK4x4_NUM];
   int8_t*
   pIntra4x4PredModeBlocks;	// (*pIntra4x4PredModeBlocks)[INTRA_4x4_MODE_NUM];  //last byte is not used; the first 4 byte is for the bottom 12,13,14,15 4x4 block intra mode, and 3 byte for (3,7,11)
 

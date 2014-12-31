@@ -62,7 +62,7 @@ int8_t*		pRefIndex;
 
 int32_t*     pSadCost;				// mb sad. set to 0 for intra mb
 int8_t*      pIntra4x4PredMode;	// [MB_BLOCK4x4_NUM]
-int8_t*      pNonZeroCount;		// [MB_LUMA_CHROMA_BLOCK4x4_NUM]
+uint8_t*      pNonZeroCount;		// [MB_LUMA_CHROMA_BLOCK4x4_NUM]
 
 SMVUnitXY	sP16x16Mv;
 

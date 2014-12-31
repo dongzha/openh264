@@ -123,7 +123,7 @@ static const uint8_t g_kuiTableBIdx[2][8] = {
 	iTc[3] = g_kiTc0Table(iIdexA)[pBS[3]] + bchroma;\
 }
 
-void inline DeblockingBSInsideMBAvsbase (int8_t* pNnzTab, uint8_t uiBS[2][4][4], int32_t iLShiftFactor) {
+void inline DeblockingBSInsideMBAvsbase (uint8_t* pNnzTab, uint8_t uiBS[2][4][4], int32_t iLShiftFactor) {
   uint32_t uiNnz32b0, uiNnz32b1, uiNnz32b2, uiNnz32b3;
 
   uiNnz32b0 = * (uint32_t*) (pNnzTab + 0);
@@ -152,7 +152,7 @@ void inline DeblockingBSInsideMBAvsbase (int8_t* pNnzTab, uint8_t uiBS[2][4][4],
 
 }
 
-void inline DeblockingBSInsideMBNormal (SMB* pCurMb, uint8_t uiBS[2][4][4], int8_t* pNnzTab) {
+void inline DeblockingBSInsideMBNormal (SMB* pCurMb, uint8_t uiBS[2][4][4], uint8_t* pNnzTab) {
   uint32_t uiNnz32b0, uiNnz32b1, uiNnz32b2, uiNnz32b3;
   ENFORCE_STACK_ALIGN_1D (uint8_t, uiBsx4, 4, 4);
 
@@ -774,7 +774,7 @@ void PerformDeblockingFilter (sWelsEncCtx* pEnc) {
   }
 }
 
-void WelsNonZeroCount_c (int8_t* pNonZeroCount) {
+void WelsNonZeroCount_c (uint8_t* pNonZeroCount) {
   int32_t i;
 
   for (i = 0; i < 24; i++) {

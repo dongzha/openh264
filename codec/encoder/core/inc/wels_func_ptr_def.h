@@ -116,7 +116,7 @@ typedef struct tagDeblockingFunc {
   PDeblockingBSCalc         pfDeblockingBSCalc;
 } DeblockingFunc;
 
-typedef  void (*PSetNoneZeroCountZeroFunc) (int8_t* pNonZeroCount);
+typedef  void (*PSetNoneZeroCountZeroFunc) (uint8_t* pNonZeroCount);
 
 typedef int32_t (*PIntraFineMdFunc) (sWelsEncCtx* pEncCtx, SWelsMD* pWelsMd, SMB* pCurMb, SMbCache* pMbCache);
 typedef void (*PInterFineMdFunc) (sWelsEncCtx* pEncCtx, SWelsMD* pWelsMd, SSlice* slice, SMB* pCurMb, int32_t bestCost);

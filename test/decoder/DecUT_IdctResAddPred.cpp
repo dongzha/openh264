@@ -40,7 +40,7 @@ void IdctResAddPred_ref (uint8_t* pPred, const int32_t kiStride, int16_t* pRs) {
   }
 }
 
-void SetNonZeroCount_ref (int8_t* pNonZeroCount) {
+void SetNonZeroCount_ref (uint8_t* pNonZeroCount) {
   int32_t i;
 
   for (i = 0; i < 24; i++) {
@@ -96,30 +96,30 @@ GENERATE_IDCTRESADDPRED (IdctResAddPred_AArch64_neon)
 #define GENERATE_SETNONZEROCOUNT(method) \
 TEST(DecoderDecodeMbAux, method) \
 {\
-    int8_t iNonZeroCount[2][24];\
+    uint8_t uiNonZeroCount[2][24];\
     for(int32_t i = 0; i < 24; i++) {\
-        iNonZeroCount[0][i] = iNonZeroCount[1][i] = (rand() % 256)-128;\
+        uiNonZeroCount[0][i] = uiNonZeroCount[1][i] = (rand() % 256);\
     }\
-    method(iNonZeroCount[0]);\
-    SetNonZeroCount_ref(iNonZeroCount[1]);\
+    method(uiNonZeroCount[0]);\
+    SetNonZeroCount_ref(uiNonZeroCount[1]);\
     for(int32_t i =0; i<24; i++) {\
-        ASSERT_EQ (iNonZeroCount[0][i], iNonZeroCount[1][i]);\
-    }\
-    for(int32_t i =0; i<24; i++) {\
-        iNonZeroCount[0][i] = iNonZeroCount[1][i] = -128;\
-    }\
-    method(iNonZeroCount[0]);\
-    SetNonZeroCount_ref(iNonZeroCount[1]);\
-    for(int32_t i =0; i<24; i++) {\
-        ASSERT_EQ (iNonZeroCount[0][i], iNonZeroCount[1][i]);\
+        ASSERT_EQ (uiNonZeroCount[0][i], uiNonZeroCount[1][i]);\
     }\
     for(int32_t i =0; i<24; i++) {\
-        iNonZeroCount[0][i] = iNonZeroCount[1][i] = 127;\
+        uiNonZeroCount[0][i] = uiNonZeroCount[1][i] = 0;\
     }\
-    method(iNonZeroCount[0]);\
-    SetNonZeroCount_ref(iNonZeroCount[1]);\
+    method(uiNonZeroCount[0]);\
+    SetNonZeroCount_ref(uiNonZeroCount[1]);\
     for(int32_t i =0; i<24; i++) {\
-        ASSERT_EQ (iNonZeroCount[0][i], iNonZeroCount[1][i]);\
+        ASSERT_EQ (uiNonZeroCount[0][i], uiNonZeroCount[1][i]);\
+    }\
+    for(int32_t i =0; i<24; i++) {\
+        uiNonZeroCount[0][i] = uiNonZeroCount[1][i] = 255;\
+    }\
+    method(uiNonZeroCount[0]);\
+    SetNonZeroCount_ref(uiNonZeroCount[1]);\
+    for(int32_t i =0; i<24; i++) {\
+        ASSERT_EQ (uiNonZeroCount[0][i], uiNonZeroCount[1][i]);\
     }\
 }
 

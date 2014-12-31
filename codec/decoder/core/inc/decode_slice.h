@@ -73,13 +73,13 @@ void WelsBlockZero8x8_sse2(int16_t * block, int32_t stride);
 #endif
 
 #if defined(HAVE_NEON)
-void SetNonZeroCount_neon (int8_t* pNonZeroCount);
+void SetNonZeroCount_neon (uint8_t* pNonZeroCount);
 void WelsBlockZero16x16_neon(int16_t * block, int32_t stride);
 void WelsBlockZero8x8_neon(int16_t * block, int32_t stride);
 #endif
 
 #if defined(HAVE_NEON_AARCH64)
-void SetNonZeroCount_AArch64_neon (int8_t* pNonZeroCount);
+void SetNonZeroCount_AArch64_neon (uint8_t* pNonZeroCount);
 void WelsBlockZero16x16_AArch64_neon(int16_t * block, int32_t stride);
 void WelsBlockZero8x8_AArch64_neon(int16_t * block, int32_t stride);
 #endif
@@ -87,7 +87,7 @@ void WelsBlockZero8x8_AArch64_neon(int16_t * block, int32_t stride);
 }
 #endif//__cplusplus
 
-void SetNonZeroCount_c (int8_t* pNonZeroCount);
+void SetNonZeroCount_c (uint8_t* pNonZeroCount);
 
 void WelsBlockFuncInit (SBlockFunc* pFunc,  int32_t iCpu);
 void WelsBlockZero16x16_c(int16_t * block, int32_t stride);

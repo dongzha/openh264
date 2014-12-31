@@ -1507,7 +1507,7 @@ int32_t RequestMemorySvc (sWelsEncCtx** ppCtx) {
                                       (pMa->WelsMallocz (iCountMaxMbNum * INTRA_4x4_MODE_NUM, "pIntra4x4PredModeBlocks"));
   WELS_VERIFY_RETURN_PROC_IF (1, (NULL == (*ppCtx)->pIntra4x4PredModeBlocks), FreeMemorySvc (ppCtx))
 
-  (*ppCtx)->pNonZeroCountBlocks = static_cast<int8_t*>
+  (*ppCtx)->pNonZeroCountBlocks = static_cast<uint8_t*>
                                   (pMa->WelsMallocz (iCountMaxMbNum * MB_LUMA_CHROMA_BLOCK4x4_NUM, "pNonZeroCountBlocks"));
   WELS_VERIFY_RETURN_PROC_IF (1, (NULL == (*ppCtx)->pNonZeroCountBlocks), FreeMemorySvc (ppCtx))
 

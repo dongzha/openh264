@@ -65,13 +65,13 @@ typedef struct TagDeblockingFilter {
 extern "C" {
 #endif//__cplusplus
 #if defined(HAVE_NEON)
-void WelsNonZeroCount_neon (int8_t* pNonZeroCount);
-void DeblockingBSCalcEnc_neon (int8_t* pNzc, SMVUnitXY* pMv, int32_t iBoundryFlag, int32_t iMbStride,
+void WelsNonZeroCount_neon (uint8_t* pNonZeroCount);
+void DeblockingBSCalcEnc_neon (uint8_t* pNzc, SMVUnitXY* pMv, int32_t iBoundryFlag, int32_t iMbStride,
                                uint8_t (*pBS)[4][4]);
 #endif
 #if defined(HAVE_NEON_AARCH64)
-void WelsNonZeroCount_AArch64_neon (int8_t* pNonZeroCount);
-void DeblockingBSCalcEnc_AArch64_neon (int8_t* pNzc, SMVUnitXY* pMv, int32_t iBoundryFlag, int32_t iMbStride,
+void WelsNonZeroCount_AArch64_neon (uint8_t* pNonZeroCount);
+void DeblockingBSCalcEnc_AArch64_neon (uint8_t* pNzc, SMVUnitXY* pMv, int32_t iBoundryFlag, int32_t iMbStride,
                                        uint8_t (*pBS)[4][4]);
 #endif
 #if defined(__cplusplus)
@@ -79,7 +79,7 @@ void DeblockingBSCalcEnc_AArch64_neon (int8_t* pNzc, SMVUnitXY* pMv, int32_t iBo
 #endif//__cplusplus
 void DeblockingInit (DeblockingFunc*   pFunc,  int32_t iCpu);
 
-void WelsNonZeroCount_c (int8_t* pNonZeroCount);
+void WelsNonZeroCount_c (uint8_t* pNonZeroCount);
 void WelsBlockFuncInit (PSetNoneZeroCountZeroFunc* pfSetNZCZero,  int32_t iCpu);
 
 void PerformDeblockingFilter (sWelsEncCtx* pEnc);

@@ -53,7 +53,7 @@ void FillNeighborCacheIntra (SMbCache* pMbCache, SMB* pCurMb, int32_t iMbWidth) 
   uint32_t uiNeighborIntra = 0;
 
   if (uiNeighborAvail & LEFT_MB_POS) { //LEFT MB
-    int8_t* pLeftMbNonZeroCount = pCurMb->pNonZeroCount - MB_LUMA_CHROMA_BLOCK4x4_NUM;
+    uint8_t* pLeftMbNonZeroCount = pCurMb->pNonZeroCount - MB_LUMA_CHROMA_BLOCK4x4_NUM;
     pMbCache->iNonZeroCoeffCount[8] = pLeftMbNonZeroCount[ 3];
     pMbCache->iNonZeroCoeffCount[16] = pLeftMbNonZeroCount[ 7];
     pMbCache->iNonZeroCoeffCount[24] = pLeftMbNonZeroCount[11];

@@ -1075,7 +1075,7 @@ int32_t WelsActualDecodeMbCavlcISlice (PWelsDecoderContext pCtx) {
   int32_t iMbX = pCurLayer->iMbX;
   int32_t iMbY = pCurLayer->iMbY;
   const int32_t iMbXy = pCurLayer->iMbXyIndex;
-  int8_t* pNzc = pCurLayer->pNzc[iMbXy];
+  uint8_t* pNzc = pCurLayer->pNzc[iMbXy];
   int32_t i;
   uint32_t uiMbType = 0, uiCbp = 0, uiCbpL = 0, uiCbpC = 0;
   uint32_t uiCode;
@@ -1342,7 +1342,7 @@ int32_t WelsActualDecodeMbCavlcPSlice (PWelsDecoderContext pCtx) {
   int32_t iMbX = pCurLayer->iMbX;
   int32_t iMbY = pCurLayer->iMbY;
   const int32_t iMbXy = pCurLayer->iMbXyIndex;
-  int8_t* pNzc = pCurLayer->pNzc[iMbXy];
+  uint8_t* pNzc = pCurLayer->pNzc[iMbXy];
   int32_t i;
   uint32_t uiMbType = 0, uiCbp = 0, uiCbpL = 0, uiCbpC = 0;
   uint32_t uiCode;
@@ -1609,7 +1609,7 @@ int32_t WelsDecodeMbCavlcPSlice (PWelsDecoderContext pCtx, PNalUnit pNalCur, uin
   PPicture* ppRefPic = pCtx->sRefPic.pRefList[LIST_0];
   intX_t iUsedBits;
   const int32_t iMbXy = pCurLayer->iMbXyIndex;
-  int8_t* pNzc = pCurLayer->pNzc[iMbXy];
+  uint8_t* pNzc = pCurLayer->pNzc[iMbXy];
   int32_t iBaseModeFlag, i;
   int32_t iRet = 0; //should have the return value to indicate decoding error or not, It's NECESSARY--2010.4.15
   uint32_t uiCode;
@@ -1729,7 +1729,7 @@ void WelsBlockFuncInit (SBlockFunc*   pFunc,  int32_t iCpu) {
 
 }
 
-void SetNonZeroCount_c (int8_t* pNonZeroCount) {
+void SetNonZeroCount_c (uint8_t* pNonZeroCount) {
   int32_t i;
 
   for (i = 0; i < 24; i++) {

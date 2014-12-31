@@ -766,11 +766,11 @@ TEST (DecoderDeblocking, DeblockingBsMarginalMBAvcbase) {
   SDqLayer sDqLayer;
 
   // Only define 2 MBs here
-  int8_t iNoZeroCount[24 * 2]; // (*pNzc)[24]
+  uint8_t uiNoZeroCount[24 * 2]; // (*pNzc)[24]
   int8_t iLayerRefIndex[2][16 * 2]; // (*pRefIndex[LIST_A])[MB_BLOCK4x4_NUM];
   int16_t iLayerMv[2][16 * 2][2]; //(*pMv[LIST_A])[MB_BLOCK4x4_NUM][MV_A];
 
-  sDqLayer.pNzc = (int8_t (*)[24])iNoZeroCount;
+  sDqLayer.pNzc = (uint8_t (*)[24])uiNoZeroCount;
   sDqLayer.pRefIndex[0] = (int8_t (*)[16])&iLayerRefIndex[0];
   sDqLayer.pRefIndex[1] = (int8_t (*)[16])&iLayerRefIndex[1];
 
@@ -778,7 +778,7 @@ TEST (DecoderDeblocking, DeblockingBsMarginalMBAvcbase) {
   sDqLayer.pMv[1] = (int16_t (*) [16][2])&iLayerMv[1];
 
 #define UT_DB_CLEAN_STATUS \
-  memset(iNoZeroCount, 0, sizeof(int8_t)*24*2); \
+  memset(uiNoZeroCount, 0, sizeof(uint8_t)*24*2); \
   memset(iLayerRefIndex, 0, sizeof(int8_t)*2*16*2); \
   memset(iLayerMv, 0, sizeof(int16_t)*2*16*2*2);
 
@@ -792,13 +792,13 @@ TEST (DecoderDeblocking, DeblockingBsMarginalMBAvcbase) {
 
       // (1) iEdge == 0, current block NoZeroCount != 0
       UT_DB_CLEAN_STATUS
-      iNoZeroCount[0 * 24 + iCurrBlock] = 1; // Current MB_block position
+      uiNoZeroCount[0 * 24 + iCurrBlock] = 1; // Current MB_block position
       EXPECT_TRUE (DeblockingBsMarginalMBAvcbase (&sDqLayer, iEdge, 1,
                    0) == (2u << (iPos * 8))) << iEdge << " " << iPos << " NoZeroCount!=0";
 
       // (2) iEdge == 0, neighbor block NoZeroCount != 0
       UT_DB_CLEAN_STATUS
-      iNoZeroCount[1 * 24 + iNeighborBlock ] = 1; // Neighbor MB_block position
+      uiNoZeroCount[1 * 24 + iNeighborBlock ] = 1; // Neighbor MB_block position
       EXPECT_TRUE (DeblockingBsMarginalMBAvcbase (&sDqLayer, iEdge, 1,
                    0) == (2u << (iPos * 8))) << iEdge << " " << iPos << " NoZeroCount!=0";
 

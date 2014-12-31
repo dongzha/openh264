@@ -190,7 +190,7 @@ PChromaDeblockingLT4Func  pfChromaDeblockingLT4Hor;
 PChromaDeblockingEQ4Func  pfChromaDeblockingEQ4Hor;
 } SDeblockingFunc, *PDeblockingFunc;
 
-typedef void (*PWelsNonZeroCountFunc) (int8_t* pNonZeroCount);
+typedef void (*PWelsNonZeroCountFunc) (uint8_t* pNonZeroCount);
 typedef void (*PWelsBlockZeroFunc) (int16_t* block,int32_t stride);
 typedef  struct  TagBlockFunc {
 PWelsNonZeroCountFunc		pWelsSetNonZeroCountFunc;
@@ -263,8 +263,8 @@ struct {
   int8_t*	pChromaQp[LAYER_NUM_EXCHANGEABLE];					/*mb chroma_qp*/
   int16_t	(*pMvd[LAYER_NUM_EXCHANGEABLE][LIST_A])[MB_BLOCK4x4_NUM][MV_A]; //[LAYER_NUM_EXCHANGEABLE   MB_BLOCK4x4_NUM*]
   uint8_t *pCbfDc[LAYER_NUM_EXCHANGEABLE];
-  int8_t	(*pNzc[LAYER_NUM_EXCHANGEABLE])[24];
-  int8_t	(*pNzcRs[LAYER_NUM_EXCHANGEABLE])[24];
+  uint8_t	(*pNzc[LAYER_NUM_EXCHANGEABLE])[24];
+  uint8_t	(*pNzcRs[LAYER_NUM_EXCHANGEABLE])[24];
   int16_t (*pScaledTCoeff[LAYER_NUM_EXCHANGEABLE])[MB_COEFF_LIST_SIZE]; /*need be aligned*/
   int8_t	(*pIntraPredMode[LAYER_NUM_EXCHANGEABLE])[8]; //0~3 top4x4 ; 4~6 left 4x4; 7 intra16x16
   int8_t (*pIntra4x4FinalMode[LAYER_NUM_EXCHANGEABLE])[MB_BLOCK4x4_NUM];

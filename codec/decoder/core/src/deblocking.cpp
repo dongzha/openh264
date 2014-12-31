@@ -144,7 +144,7 @@ static const uint8_t g_kuiTableBIdx[2][8] = {
 	tc[3] = g_kiTc0Table(iIndexA)[pBS[3]] + bChroma;\
 }
 
-void inline DeblockingBSInsideMBAvsbase (int8_t* pNnzTab, uint8_t nBS[2][4][4], int32_t iLShiftFactor) {
+void inline DeblockingBSInsideMBAvsbase (uint8_t* pNnzTab, uint8_t nBS[2][4][4], int32_t iLShiftFactor) {
   uint32_t uiNnz32b0, uiNnz32b1, uiNnz32b2, uiNnz32b3;
 
   uiNnz32b0 = * (uint32_t*) (pNnzTab + 0);
@@ -173,7 +173,7 @@ void inline DeblockingBSInsideMBAvsbase (int8_t* pNnzTab, uint8_t nBS[2][4][4], 
 
 }
 
-void static inline DeblockingBSInsideMBNormal (PDqLayer pCurDqLayer, uint8_t nBS[2][4][4], int8_t* pNnzTab,
+void static inline DeblockingBSInsideMBNormal (PDqLayer pCurDqLayer, uint8_t nBS[2][4][4], uint8_t* pNnzTab,
     int32_t iMbXy) {
   uint32_t uiNnz32b0, uiNnz32b1, uiNnz32b2, uiNnz32b3;
   int8_t* iRefIndex = pCurDqLayer->pRefIndex[LIST_0][iMbXy];
